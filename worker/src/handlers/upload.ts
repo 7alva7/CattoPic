@@ -32,7 +32,7 @@ export async function uploadHandler(c: Context<{ Bindings: Env }>): Promise<Resp
 
     const tags = parseTags(tagsString);
     const storage = new StorageService(c.env.R2_BUCKET);
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
 
     const results: UploadResult[] = [];
     const workerUrl = new URL(c.req.url).origin;

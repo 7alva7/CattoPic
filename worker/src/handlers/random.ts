@@ -31,7 +31,7 @@ export async function randomHandler(c: Context<{ Bindings: Env }>): Promise<Resp
     }
 
     // Get random image metadata
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const image = await metadata.getRandomImage({
       tags: tags.length > 0 ? tags : undefined,
       exclude: exclude.length > 0 ? exclude : undefined,

@@ -14,7 +14,7 @@ export async function imagesHandler(c: Context<{ Bindings: Env }>): Promise<Resp
     const tag = url.searchParams.get('tag') || undefined;
     const orientation = validateOrientation(url.searchParams.get('orientation'));
 
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const { images, total } = await metadata.getImages({ page, limit, tag, orientation });
 
     const workerUrl = new URL(c.req.url).origin;
@@ -53,7 +53,7 @@ export async function imageDetailHandler(c: Context<{ Bindings: Env }>): Promise
       return errorResponse('Invalid image ID');
     }
 
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const image = await metadata.getImage(id);
 
     if (!image) {
@@ -90,7 +90,7 @@ export async function updateImageHandler(c: Context<{ Bindings: Env }>): Promise
     }
 
     const body = await c.req.json();
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
 
     // Build updates object
     const updates: Record<string, any> = {};
@@ -143,7 +143,7 @@ export async function deleteImageHandler(c: Context<{ Bindings: Env }>): Promise
       return errorResponse('Invalid image ID');
     }
 
-    const metadataService = new MetadataService(c.env.KV);
+    const metadataService = new MetadataService(c.env.DB);
     const image = await metadataService.getImage(id);
 
     if (!image) {

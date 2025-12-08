@@ -1,11 +1,29 @@
 // Cloudflare Worker bindings
 export interface Env {
   R2_BUCKET: R2Bucket;
-  KV: KVNamespace;
+  DB: D1Database;
   ENVIRONMENT: string;
 }
 
-// Image metadata stored in KV
+// D1 row type for images table
+export interface ImageRow {
+  id: string;
+  original_name: string;
+  upload_time: string;
+  expiry_time: string | null;
+  orientation: string;
+  format: string;
+  width: number;
+  height: number;
+  path_original: string;
+  path_webp: string | null;
+  path_avif: string | null;
+  size_original: number;
+  size_webp: number;
+  size_avif: number;
+}
+
+// Image metadata
 export interface ImageMetadata {
   id: string;
   originalName: string;

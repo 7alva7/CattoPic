@@ -7,7 +7,7 @@ import { sanitizeTagName } from '../utils/validation';
 // GET /api/tags - Get all tags
 export async function tagsHandler(c: Context<{ Bindings: Env }>): Promise<Response> {
   try {
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const tags = await metadata.getAllTags();
 
     return successResponse({ tags });
@@ -28,7 +28,7 @@ export async function createTagHandler(c: Context<{ Bindings: Env }>): Promise<R
       return errorResponse('Tag name is required');
     }
 
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     await metadata.createTag(name);
 
     return successResponse({
@@ -56,7 +56,7 @@ export async function renameTagHandler(c: Context<{ Bindings: Env }>): Promise<R
       return errorResponse('New name must be different from old name');
     }
 
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const affectedCount = await metadata.renameTag(oldName, newName);
 
     // Get updated count
@@ -78,7 +78,7 @@ export async function deleteTagHandler(c: Context<{ Bindings: Env }>): Promise<R
   try {
     const name = decodeURIComponent(c.req.param('name'));
 
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const affectedImages = await metadata.deleteTag(name);
 
     return successResponse({
@@ -109,7 +109,7 @@ export async function batchTagsHandler(c: Context<{ Bindings: Env }>): Promise<R
       return errorResponse('Either addTags or removeTags must be provided');
     }
 
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const updatedCount = await metadata.batchUpdateTags(imageIds, sanitizedAddTags, sanitizedRemoveTags);
 
     return successResponse({ updatedCount });

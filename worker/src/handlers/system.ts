@@ -21,11 +21,24 @@ export async function validateApiKeyHandler(c: Context<{ Bindings: Env }>): Prom
 // GET /api/config - Get configuration
 export async function configHandler(c: Context<{ Bindings: Env }>): Promise<Response> {
   try {
-    // Try to get custom config from KV
-    const configData = await c.env.KV.get('config');
-    const config = configData ? JSON.parse(configData) : DEFAULT_CONFIG;
+    // Try to get custom config from D1
+    const configResult = await c.env.DB.prepare(`
+      SELECT key, value FROM config
+    `).all<{ key: string; value: string }>();
 
-    return successResponse({ config });
+    if (configResult.results && configResult.results.length > 0) {
+      const config: Record<string, any> = { ...DEFAULT_CONFIG };
+      for (const row of configResult.results) {
+        try {
+          config[row.key] = JSON.parse(row.value);
+        } catch {
+          config[row.key] = row.value;
+        }
+      }
+      return successResponse({ config });
+    }
+
+    return successResponse({ config: DEFAULT_CONFIG });
 
   } catch (err) {
     console.error('Config handler error:', err);
@@ -36,7 +49,7 @@ export async function configHandler(c: Context<{ Bindings: Env }>): Promise<Resp
 // POST /api/cleanup - Clean up expired images
 export async function cleanupHandler(c: Context<{ Bindings: Env }>): Promise<Response> {
   try {
-    const metadata = new MetadataService(c.env.KV);
+    const metadata = new MetadataService(c.env.DB);
     const storage = new StorageService(c.env.R2_BUCKET);
 
     // Get expired images

@@ -1,38 +1,42 @@
-// Authentication Service
+// D1 Authentication Service
 export class AuthService {
-  constructor(private kv: KVNamespace) {}
+  constructor(private db: D1Database) {}
 
   async validateApiKey(key: string): Promise<boolean> {
     if (!key) return false;
 
-    const keysData = await this.kv.get('api_keys');
-    if (!keysData) return false;
+    const result = await this.db.prepare(`
+      SELECT id FROM api_keys WHERE key = ?
+    `).bind(key).first<{ id: number }>();
 
-    const keys: string[] = JSON.parse(keysData);
-    return keys.includes(key);
+    if (result) {
+      // Update last used timestamp
+      await this.db.prepare(`
+        UPDATE api_keys SET last_used_at = ? WHERE key = ?
+      `).bind(new Date().toISOString(), key).run();
+      return true;
+    }
+
+    return false;
   }
 
   async addApiKey(key: string): Promise<void> {
-    const keysData = await this.kv.get('api_keys');
-    const keys: string[] = keysData ? JSON.parse(keysData) : [];
-
-    if (!keys.includes(key)) {
-      keys.push(key);
-      await this.kv.put('api_keys', JSON.stringify(keys));
-    }
+    await this.db.prepare(`
+      INSERT OR IGNORE INTO api_keys (key, created_at) VALUES (?, ?)
+    `).bind(key, new Date().toISOString()).run();
   }
 
   async removeApiKey(key: string): Promise<void> {
-    const keysData = await this.kv.get('api_keys');
-    if (!keysData) return;
-
-    const keys: string[] = JSON.parse(keysData);
-    await this.kv.put('api_keys', JSON.stringify(keys.filter(k => k !== key)));
+    await this.db.prepare(`
+      DELETE FROM api_keys WHERE key = ?
+    `).bind(key).run();
   }
 
   async listApiKeys(): Promise<string[]> {
-    const keysData = await this.kv.get('api_keys');
-    return keysData ? JSON.parse(keysData) : [];
+    const result = await this.db.prepare(`
+      SELECT key FROM api_keys ORDER BY created_at DESC
+    `).all<{ key: string }>();
+    return result.results?.map(r => r.key) || [];
   }
 
   // Extract API key from Authorization header

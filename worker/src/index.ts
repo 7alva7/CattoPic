@@ -33,7 +33,7 @@ const authMiddleware = async (c: any, next: () => Promise<void>) => {
     return unauthorizedResponse();
   }
 
-  const authService = new AuthService(c.env.KV);
+  const authService = new AuthService(c.env.DB);
   const isValid = await authService.validateApiKey(apiKey);
 
   if (!isValid) {
