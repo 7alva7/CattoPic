@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import type { Env } from '../types';
 import { MetadataService } from '../services/metadata';
+import { StorageService } from '../services/storage';
 import { successResponse, errorResponse } from '../utils/response';
 import { sanitizeTagName } from '../utils/validation';
 
@@ -14,7 +15,7 @@ export async function tagsHandler(c: Context<{ Bindings: Env }>): Promise<Respon
 
   } catch (err) {
     console.error('Tags handler error:', err);
-    return errorResponse('Failed to fetch tags');
+    return errorResponse('获取标签列表失败');
   }
 }
 
@@ -25,7 +26,7 @@ export async function createTagHandler(c: Context<{ Bindings: Env }>): Promise<R
     const name = sanitizeTagName(body.name || '');
 
     if (!name) {
-      return errorResponse('Tag name is required');
+      return errorResponse('标签名称不能为空');
     }
 
     const metadata = new MetadataService(c.env.DB);
@@ -37,7 +38,7 @@ export async function createTagHandler(c: Context<{ Bindings: Env }>): Promise<R
 
   } catch (err) {
     console.error('Create tag handler error:', err);
-    return errorResponse('Failed to create tag');
+    return errorResponse('创建标签失败');
   }
 }
 
@@ -49,11 +50,11 @@ export async function renameTagHandler(c: Context<{ Bindings: Env }>): Promise<R
     const newName = sanitizeTagName(body.newName || '');
 
     if (!newName) {
-      return errorResponse('New tag name is required');
+      return errorResponse('新标签名称不能为空');
     }
 
     if (oldName === newName) {
-      return errorResponse('New name must be different from old name');
+      return errorResponse('新名称不能与旧名称相同');
     }
 
     const metadata = new MetadataService(c.env.DB);
@@ -69,26 +70,45 @@ export async function renameTagHandler(c: Context<{ Bindings: Env }>): Promise<R
 
   } catch (err) {
     console.error('Rename tag handler error:', err);
-    return errorResponse('Failed to rename tag');
+    return errorResponse('重命名标签失败');
   }
 }
 
-// DELETE /api/tags/:name - Delete tag
+// DELETE /api/tags/:name - Delete tag and associated images
 export async function deleteTagHandler(c: Context<{ Bindings: Env }>): Promise<Response> {
   try {
     const name = decodeURIComponent(c.req.param('name'));
 
     const metadata = new MetadataService(c.env.DB);
-    const affectedImages = await metadata.deleteTag(name);
+    const storage = new StorageService(c.env.R2_BUCKET);
+
+    // Get all images with this tag first (to get their R2 paths)
+    const images = await metadata.getImagesByTag(name);
+
+    // Collect all R2 keys to delete
+    const keysToDelete: string[] = [];
+    for (const image of images) {
+      keysToDelete.push(image.paths.original);
+      if (image.paths.webp) keysToDelete.push(image.paths.webp);
+      if (image.paths.avif) keysToDelete.push(image.paths.avif);
+    }
+
+    // Delete files from R2
+    if (keysToDelete.length > 0) {
+      await storage.deleteMany(keysToDelete);
+    }
+
+    // Delete tag and associated images from database
+    const { deletedImages } = await metadata.deleteTagWithImages(name);
 
     return successResponse({
-      message: 'Tag deleted',
-      affectedImages
+      message: '标签及关联图片已删除',
+      deletedImages
     });
 
   } catch (err) {
     console.error('Delete tag handler error:', err);
-    return errorResponse('Failed to delete tag');
+    return errorResponse('删除标签失败');
   }
 }
 
@@ -99,14 +119,14 @@ export async function batchTagsHandler(c: Context<{ Bindings: Env }>): Promise<R
     const { imageIds, addTags, removeTags } = body;
 
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
-      return errorResponse('imageIds array is required');
+      return errorResponse('图片ID列表不能为空');
     }
 
     const sanitizedAddTags = (addTags || []).map(sanitizeTagName).filter(Boolean);
     const sanitizedRemoveTags = (removeTags || []).map(sanitizeTagName).filter(Boolean);
 
     if (sanitizedAddTags.length === 0 && sanitizedRemoveTags.length === 0) {
-      return errorResponse('Either addTags or removeTags must be provided');
+      return errorResponse('必须提供要添加或删除的标签');
     }
 
     const metadata = new MetadataService(c.env.DB);
@@ -116,6 +136,6 @@ export async function batchTagsHandler(c: Context<{ Bindings: Env }>): Promise<R
 
   } catch (err) {
     console.error('Batch tags handler error:', err);
-    return errorResponse('Failed to update tags');
+    return errorResponse('更新标签失败');
   }
 }

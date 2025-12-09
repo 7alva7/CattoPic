@@ -290,6 +290,38 @@ export class MetadataService {
     return countResult?.count || 0;
   }
 
+  async getImagesByTag(tagName: string): Promise<ImageMetadata[]> {
+    const result = await this.db.prepare(`
+      SELECT i.* FROM images i
+      JOIN image_tags it ON i.id = it.image_id
+      JOIN tags t ON it.tag_id = t.id
+      WHERE t.name = ?
+    `).bind(tagName).all<ImageRow>();
+
+    return this.enrichWithTags(result.results || []);
+  }
+
+  async deleteTagWithImages(name: string): Promise<{ deletedImages: number; imageIds: string[] }> {
+    // Get all images with this tag
+    const images = await this.getImagesByTag(name);
+    const imageIds = images.map(img => img.id);
+
+    // Delete all images (CASCADE will handle image_tags)
+    if (imageIds.length > 0) {
+      const placeholders = imageIds.map(() => '?').join(',');
+      await this.db.prepare(`
+        DELETE FROM images WHERE id IN (${placeholders})
+      `).bind(...imageIds).run();
+    }
+
+    // Delete the tag itself
+    await this.db.prepare(`
+      DELETE FROM tags WHERE name = ?
+    `).bind(name).run();
+
+    return { deletedImages: imageIds.length, imageIds };
+  }
+
   async batchUpdateTags(imageIds: string[], addTags: string[], removeTags: string[]): Promise<number> {
     const statements: D1PreparedStatement[] = [];
 

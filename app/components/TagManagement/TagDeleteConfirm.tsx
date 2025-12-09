@@ -59,15 +59,15 @@ export default function TagDeleteConfirm({
                   <>
                     确定要删除标签 <span className="font-semibold text-red-600 dark:text-red-400">&quot;{tagName}&quot;</span> 吗？
                     {tagCount > 0 && (
-                      <span className="block mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        该标签已被 {tagCount} 张图片使用
+                      <span className="block mt-2 text-sm font-medium text-red-600 dark:text-red-400">
+                        将同时删除 {tagCount} 张关联图片！
                       </span>
                     )}
                   </>
                 )}
               </p>
               <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
-                此操作不可撤销
+                此操作不可撤销，图片和文件将被永久删除
               </p>
             </div>
 

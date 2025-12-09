@@ -40,7 +40,7 @@ export async function imagesHandler(c: Context<{ Bindings: Env }>): Promise<Resp
 
   } catch (err) {
     console.error('Images handler error:', err);
-    return errorResponse('Failed to fetch images');
+    return errorResponse('获取图片列表失败');
   }
 }
 
@@ -50,14 +50,14 @@ export async function imageDetailHandler(c: Context<{ Bindings: Env }>): Promise
     const id = c.req.param('id');
 
     if (!isValidUUID(id)) {
-      return errorResponse('Invalid image ID');
+      return errorResponse('无效的图片ID');
     }
 
     const metadata = new MetadataService(c.env.DB);
     const image = await metadata.getImage(id);
 
     if (!image) {
-      return notFoundResponse('Image not found');
+      return notFoundResponse('图片不存在');
     }
 
     const workerUrl = new URL(c.req.url).origin;
@@ -76,7 +76,7 @@ export async function imageDetailHandler(c: Context<{ Bindings: Env }>): Promise
 
   } catch (err) {
     console.error('Image detail handler error:', err);
-    return errorResponse('Failed to fetch image');
+    return errorResponse('获取图片详情失败');
   }
 }
 
@@ -86,7 +86,7 @@ export async function updateImageHandler(c: Context<{ Bindings: Env }>): Promise
     const id = c.req.param('id');
 
     if (!isValidUUID(id)) {
-      return errorResponse('Invalid image ID');
+      return errorResponse('无效的图片ID');
     }
 
     const body = await c.req.json();
@@ -111,7 +111,7 @@ export async function updateImageHandler(c: Context<{ Bindings: Env }>): Promise
     const updated = await metadata.updateImage(id, updates);
 
     if (!updated) {
-      return notFoundResponse('Image not found');
+      return notFoundResponse('图片不存在');
     }
 
     const workerUrl = new URL(c.req.url).origin;
@@ -130,7 +130,7 @@ export async function updateImageHandler(c: Context<{ Bindings: Env }>): Promise
 
   } catch (err) {
     console.error('Update image handler error:', err);
-    return errorResponse('Failed to update image');
+    return errorResponse('更新图片失败');
   }
 }
 
@@ -140,14 +140,14 @@ export async function deleteImageHandler(c: Context<{ Bindings: Env }>): Promise
     const id = c.req.param('id');
 
     if (!isValidUUID(id)) {
-      return errorResponse('Invalid image ID');
+      return errorResponse('无效的图片ID');
     }
 
     const metadataService = new MetadataService(c.env.DB);
     const image = await metadataService.getImage(id);
 
     if (!image) {
-      return notFoundResponse('Image not found');
+      return notFoundResponse('图片不存在');
     }
 
     // Delete files from R2
@@ -162,10 +162,10 @@ export async function deleteImageHandler(c: Context<{ Bindings: Env }>): Promise
     // Delete metadata
     await metadataService.deleteImage(id);
 
-    return successResponse({ message: 'Image deleted' });
+    return successResponse({ message: '图片已删除' });
 
   } catch (err) {
     console.error('Delete image handler error:', err);
-    return errorResponse('Failed to delete image');
+    return errorResponse('删除图片失败');
   }
 }
