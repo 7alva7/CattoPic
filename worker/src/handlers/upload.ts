@@ -34,7 +34,6 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
     const storage = new StorageService(c.env.R2_BUCKET);
     const metadata = new MetadataService(c.env.DB);
     const compression = c.env.IMAGES ? new CompressionService(c.env.IMAGES) : null;
-    const workerUrl = new URL(c.req.url).origin;
 
     // Read file data
     const arrayBuffer = await file.arrayBuffer();
@@ -132,7 +131,7 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
     await metadata.saveImage(imageMetadata);
 
     // Build result
-    const baseUrl = `${workerUrl}/r2`;
+    const baseUrl = c.env.R2_PUBLIC_URL;
     const result: UploadResult = {
       id,
       status: 'success',
