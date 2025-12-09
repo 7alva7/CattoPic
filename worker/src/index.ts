@@ -10,6 +10,7 @@ import { StorageService } from './services/storage';
 import { uploadHandler } from './handlers/upload';
 import { imagesHandler, imageDetailHandler, updateImageHandler, deleteImageHandler } from './handlers/images';
 import { randomHandler } from './handlers/random';
+import { faviconHandler } from './handlers/favicon';
 import { tagsHandler, createTagHandler, renameTagHandler, deleteTagHandler, batchTagsHandler } from './handlers/tags';
 import { validateApiKeyHandler, configHandler, cleanupHandler } from './handlers/system';
 
@@ -46,6 +47,10 @@ const authMiddleware = async (c: Context<{ Bindings: Env }>, next: () => Promise
 };
 
 // === Public Routes ===
+
+// Favicon for browser requests hitting API endpoints directly
+app.get('/favicon.ico', faviconHandler);
+app.get('/favicon.svg', faviconHandler);
 
 // Random image (public, no auth required)
 app.get('/api/random', randomHandler);
