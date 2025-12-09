@@ -57,11 +57,27 @@ export async function request<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "请求失败");
+    let errorMessage = "请求失败";
+    try {
+      const error = await response.json();
+      errorMessage = error.message || error.error || errorMessage;
+    } catch {
+      // Response is not JSON, try to get text
+      try {
+        const text = await response.text();
+        if (text) errorMessage = text;
+      } catch {
+        // Cannot parse response body
+      }
+    }
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch {
+    throw new Error("响应数据格式无效");
+  }
 }
 
 // 封装常用请求方法

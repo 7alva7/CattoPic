@@ -18,8 +18,15 @@ export async function imagesHandler(c: Context<{ Bindings: Env }>): Promise<Resp
     const cache = new CacheService(c.env.CACHE_KV);
     const cacheKey = CacheKeys.imagesList(page, limit, tag, orientation);
 
-    // Try to get from cache
-    const cached = await cache.get<ReturnType<typeof successResponse>>(cacheKey);
+    // Try to get from cache - cache stores the response data object, not the Response
+    interface ImagesListCache {
+      images: Array<Record<string, unknown>>;
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    }
+    const cached = await cache.get<ImagesListCache>(cacheKey);
     if (cached) {
       return successResponse(cached);
     }
@@ -71,8 +78,11 @@ export async function imageDetailHandler(c: Context<{ Bindings: Env }>): Promise
     const cache = new CacheService(c.env.CACHE_KV);
     const cacheKey = CacheKeys.imageDetail(id);
 
-    // Try to get from cache
-    const cached = await cache.get<ReturnType<typeof successResponse>>(cacheKey);
+    // Try to get from cache - cache stores the response data object
+    interface ImageDetailCache {
+      image: Record<string, unknown>;
+    }
+    const cached = await cache.get<ImageDetailCache>(cacheKey);
     if (cached) {
       return successResponse(cached);
     }
@@ -143,10 +153,11 @@ export async function updateImageHandler(c: Context<{ Bindings: Env }>): Promise
       return notFoundResponse('图片不存在');
     }
 
-    // Invalidate caches
+    // Invalidate caches - always invalidate image list as any update may affect display
     const cache = new CacheService(c.env.CACHE_KV);
     await cache.invalidateImageDetail(id);
-    // If tags changed, invalidate tags list cache
+    await cache.invalidateImagesList();
+    // If tags changed, also invalidate tags list cache
     if (body.tags !== undefined) {
       await cache.invalidateTagsList();
     }
