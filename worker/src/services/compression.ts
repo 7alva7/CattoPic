@@ -52,33 +52,28 @@ export class CompressionService {
       opts.maxHeight
     );
 
-    // Compress to WebP
-    try {
-      result.webp = await this.compressToFormat(
-        data,
-        'image/webp',
-        opts.quality,
-        targetDims
-      );
-    } catch (e) {
-      console.error('WebP compression failed:', e);
-    }
+    // AVIF dimensions (with 1600px limit)
+    const avifDims = {
+      width: Math.min(targetDims.width, 1600),
+      height: Math.min(targetDims.height, 1600),
+    };
 
-    // Compress to AVIF (with 1600px limit)
-    try {
-      const avifDims = {
-        width: Math.min(targetDims.width, 1600),
-        height: Math.min(targetDims.height, 1600),
-      };
-      result.avif = await this.compressToFormat(
-        data,
-        'image/avif',
-        opts.quality,
-        avifDims
-      );
-    } catch (e) {
-      console.error('AVIF compression failed:', e);
-    }
+    // Compress to WebP and AVIF in parallel
+    const [webpResult, avifResult] = await Promise.all([
+      this.compressToFormat(data, 'image/webp', opts.quality, targetDims)
+        .catch((e) => {
+          console.error('WebP compression failed:', e);
+          return null;
+        }),
+      this.compressToFormat(data, 'image/avif', opts.quality, avifDims)
+        .catch((e) => {
+          console.error('AVIF compression failed:', e);
+          return null;
+        }),
+    ]);
+
+    if (webpResult) result.webp = webpResult;
+    if (avifResult) result.avif = avifResult;
 
     return result;
   }

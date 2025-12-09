@@ -30,6 +30,7 @@ export interface UploadStateActions {
   setPhase: (phase: UploadPhase) => void
   setAllFilesStatus: (status: FileUploadStatus) => void
   setResults: (results: UploadResult[]) => void
+  updateFileStatus: (fileId: string, status: FileUploadStatus, result?: UploadResult) => void
   cancelUpload: () => void
   reset: () => void
 }

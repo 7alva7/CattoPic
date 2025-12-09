@@ -87,6 +87,39 @@ export function useUploadState(): UploadState & UploadStateActions {
     })
   }, [])
 
+  // 更新单个文件的状态（用于并发上传）
+  const updateFileStatus = useCallback((
+    fileId: string,
+    status: FileUploadStatus,
+    result?: UploadResult
+  ) => {
+    setState((prev) => {
+      const updatedFiles = prev.files.map((f) =>
+        f.id === fileId
+          ? { ...f, status, result, error: result?.error }
+          : f
+      )
+
+      const completedCount = updatedFiles.filter((f) => f.status === 'success').length
+      const errorCount = updatedFiles.filter((f) => f.status === 'error').length
+      const totalDone = completedCount + errorCount
+
+      // 自动判断整体阶段
+      let phase: UploadPhase = prev.phase
+      if (totalDone === updatedFiles.length && updatedFiles.length > 0) {
+        phase = 'completed'
+      }
+
+      return {
+        ...prev,
+        phase,
+        files: updatedFiles,
+        completedCount,
+        errorCount,
+      }
+    })
+  }, [])
+
   // 取消上传
   const cancelUpload = useCallback(() => {
     setState((prev) => {
@@ -123,6 +156,7 @@ export function useUploadState(): UploadState & UploadStateActions {
     setPhase,
     setAllFilesStatus,
     setResults,
+    updateFileStatus,
     cancelUpload,
     reset,
   }

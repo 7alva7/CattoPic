@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getApiKey, validateApiKey, setApiKey } from './utils/auth'
 import { api } from './utils/request'
+import { concurrentUpload } from './utils/concurrentUpload'
 import ApiKeyModal from './components/ApiKeyModal'
 import { UploadResponse, StatusMessage as StatusMessageType, ConfigSettings } from './types'
 import Header from './components/Header'
@@ -35,7 +36,7 @@ export default function Home() {
 
   // 上传状态管理
   const uploadState = useUploadState()
-  const { phase, files: uploadFiles, completedCount, errorCount, initializeUpload, setPhase, setAllFilesStatus, setResults, cancelUpload, reset: resetUploadState } = uploadState
+  const { phase, files: uploadFiles, completedCount, errorCount, initializeUpload, updateFileStatus, cancelUpload, reset: resetUploadState } = uploadState
 
   // 判断是否正在上传
   const isUploading = phase === 'uploading' || phase === 'processing'
@@ -110,9 +111,7 @@ export default function Home() {
   }, [])
 
   const handleUpload = async () => {
-    const selectedFiles = fileDetails.map(item => item.file)
-
-    if (selectedFiles.length === 0) return
+    if (fileDetails.length === 0) return
 
     const apiKey = getApiKey()
     if (!apiKey) {
@@ -126,54 +125,29 @@ export default function Home() {
     const controller = initializeUpload(fileDetails)
 
     try {
-      // 添加过期时间参数
-      const formData = new FormData()
-      selectedFiles.forEach(file => {
-        formData.append('images[]', file)
-      })
-
-      // 添加过期时间参数（分钟）
-      formData.append('expiryMinutes', expiryMinutes.toString())
-
-      // 添加标签参数
-      if (selectedTags.length > 0) {
-        formData.append('tags', selectedTags.join(','))
-      }
-
-      // 添加压缩参数
-      formData.append('quality', compressionQuality.toString())
-      formData.append('maxWidth', compressionMaxWidth.toString())
-      formData.append('preserveAnimation', preserveAnimation.toString())
-
-      // 延迟切换到处理阶段
-      const processingTimeout = setTimeout(() => {
-        setPhase('processing')
-        setAllFilesStatus('processing')
-      }, 2000)
-
-      // 使用自定义上传方法，传入 AbortController 的 signal
-      const result = await api.request<UploadResponse>('/api/upload', {
-        method: 'POST',
-        body: formData,
+      // 使用并发上传（5个同时）
+      const results = await concurrentUpload({
+        files: fileDetails,
+        concurrency: 5,
+        tags: selectedTags,
+        expiryMinutes,
+        quality: compressionQuality,
+        maxWidth: compressionMaxWidth,
+        preserveAnimation,
+        onFileStatusChange: updateFileStatus,
         signal: controller.signal,
       })
 
-      clearTimeout(processingTimeout)
-
-      // 设置结果
-      setResults(result.results)
-
-      const resultsWithIds = result.results.map(item => {
-        // Extract the real image ID from the original URL if available
-        let imageId = Math.random().toString(36).substring(2) // Default to random ID
+      // 处理结果
+      const resultsWithIds = results.map(item => {
+        let imageId = item.id || Math.random().toString(36).substring(2)
         const path = item.urls?.original || ''
 
-        if (item.urls?.original) {
-          // Extract file ID from the original URL
+        if (item.urls?.original && !item.id) {
           const urlParts = item.urls.original.split('/')
           const filename = urlParts[urlParts.length - 1]
           if (filename.includes('.')) {
-            imageId = filename.split('.')[0] // Remove file extension to get ID
+            imageId = filename.split('.')[0]
           }
         }
 
@@ -194,13 +168,12 @@ export default function Home() {
         message: `上传完成：共${totalCount}张，${successCount}张成功，${failedCount}张失败`
       })
 
-      // Invalidate image list cache so manage page shows new images immediately
+      // Invalidate image list cache
       invalidateImages()
 
-      // 重置文件详情，清空上传队列
+      // 重置文件详情
       setFileDetails([])
     } catch (error) {
-      // 检查是否是用户取消
       if (error instanceof Error && error.name === 'AbortError') {
         setStatus({
           type: 'warning',
@@ -210,13 +183,8 @@ export default function Home() {
       }
 
       let errorMessage = '上传失败，请重试'
-
       if (error instanceof Error) {
-        if (error.message.includes('超过最大上传数量') || error.message.includes('maximum upload')) {
-          errorMessage = `上传失败：超过最大上传数量限制（${maxUploadCount}张图片）`
-        } else {
-          errorMessage = `上传失败：${error.message}`
-        }
+        errorMessage = `上传失败：${error.message}`
       }
 
       setStatus({
@@ -224,7 +192,6 @@ export default function Home() {
         message: errorMessage
       })
 
-      // 重置上传状态
       resetUploadState()
     }
   }

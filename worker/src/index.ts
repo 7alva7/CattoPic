@@ -7,7 +7,7 @@ import { MetadataService } from './services/metadata';
 import { StorageService } from './services/storage';
 
 // Import handlers
-import { uploadHandler } from './handlers/upload';
+import { uploadHandler, uploadSingleHandler } from './handlers/upload';
 import { imagesHandler, imageDetailHandler, updateImageHandler, deleteImageHandler } from './handlers/images';
 import { randomHandler } from './handlers/random';
 import { faviconHandler } from './handlers/favicon';
@@ -30,7 +30,7 @@ app.options('*', () => corsResponse());
 // Auth middleware for protected routes
 const authMiddleware = async (c: Context<{ Bindings: Env }>, next: () => Promise<void>) => {
   const authHeader = c.req.header('Authorization');
-  const apiKey = AuthService.extractApiKey(authHeader);
+  const apiKey = AuthService.extractApiKey(authHeader ?? null);
 
   if (!apiKey) {
     return unauthorizedResponse();
@@ -109,6 +109,7 @@ app.post('/api/validate-api-key', authMiddleware, validateApiKeyHandler);
 
 // Upload
 app.post('/api/upload', authMiddleware, uploadHandler);
+app.post('/api/upload/single', authMiddleware, uploadSingleHandler);
 
 // Images CRUD
 app.get('/api/images', authMiddleware, imagesHandler);
