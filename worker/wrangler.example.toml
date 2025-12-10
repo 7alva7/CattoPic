@@ -1,3 +1,7 @@
+# CattoPic Worker Configuration Template
+# Copy this file to wrangler.toml and fill in your values
+# cp wrangler.example.toml wrangler.toml
+
 name = 'cattopic-worker'
 main = 'src/index.ts'
 compatibility_date = '2024-12-01'
@@ -5,35 +9,42 @@ compatibility_flags = ['nodejs_compat']
 
 [vars]
 ENVIRONMENT = 'production'
-R2_PUBLIC_URL = 'https://r2.catcat.li'
+# Your R2 bucket public URL (custom domain or workers.dev URL)
+R2_PUBLIC_URL = '<your-r2-public-url>'
 
-# Images binding for image transformations
+# Images binding for image transformations (Cloudflare Images)
 [images]
 binding = "IMAGES"
 
 # R2 Bucket binding
 [[r2_buckets]]
 binding = 'R2_BUCKET'
-bucket_name = 'cattopic-r2'
+# Your R2 bucket name
+bucket_name = '<your-r2-bucket-name>'
 
 # D1 Database binding
 [[d1_databases]]
 binding = 'DB'
-database_name = 'CattoPic-D1'
-database_id = 'cb07b667-2a42-4ca1-84ce-49d5114af009'
+# Your D1 database name
+database_name = '<your-d1-database-name>'
+# Your D1 database ID (get from: wrangler d1 list)
+database_id = '<your-d1-database-id>'
 
 # KV Namespace for caching
 [[kv_namespaces]]
 binding = "CACHE_KV"
-id = "f04a33814498458a84085799828bc7d7"
+# Your KV namespace ID (get from: wrangler kv namespace list)
+id = "<your-kv-namespace-id>"
 
 # Queue for async R2 deletion
 [[queues.producers]]
-queue = "cattopic-delete-queue"
+# Your queue name
+queue = "<your-queue-name>"
 binding = "DELETE_QUEUE"
 
 [[queues.consumers]]
-queue = "cattopic-delete-queue"
+# Same queue name as above
+queue = "<your-queue-name>"
 max_batch_size = 10
 max_batch_timeout = 5
 
