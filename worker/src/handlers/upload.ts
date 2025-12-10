@@ -8,13 +8,33 @@ import { CompressionService, parseCompressionOptions } from '../services/compres
 import { successResponse, errorResponse } from '../utils/response';
 import { generateImageId, parseTags, parseNumber } from '../utils/validation';
 
+// Maximum file size: 100MB (Cloudflare Workers limit is 100MB for request body)
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
+
 /**
  * Single file upload handler - processes one image with full parallelization
  * Used by frontend concurrent upload for per-file progress tracking
  */
 export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promise<Response> {
   try {
-    const formData = await c.req.formData();
+    // Check Content-Length header first to fail fast
+    const contentLength = c.req.header('Content-Length');
+    if (contentLength) {
+      const size = parseInt(contentLength, 10);
+      if (size > MAX_FILE_SIZE) {
+        console.error(`File too large: ${size} bytes (max: ${MAX_FILE_SIZE})`);
+        return errorResponse(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`, 413);
+      }
+    }
+
+    let formData: FormData;
+    try {
+      formData = await c.req.formData();
+    } catch (formError) {
+      console.error('Failed to parse form data:', formError);
+      return errorResponse('Failed to parse form data. File may be too large or corrupted.', 400);
+    }
+
     const file = formData.get('image') as File | null;
     const tagsString = formData.get('tags') as string | null;
     const expiryMinutes = parseNumber(formData.get('expiryMinutes') as string | null, 0);
@@ -23,6 +43,14 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
     if (!file || typeof file === 'string') {
       return errorResponse('No file provided');
     }
+
+    // Double-check file size
+    if (file.size > MAX_FILE_SIZE) {
+      console.error(`File too large: ${file.size} bytes (max: ${MAX_FILE_SIZE})`);
+      return errorResponse(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB`, 413);
+    }
+
+    console.log(`Processing upload: ${file.name}, size: ${file.size} bytes`);
 
     const tags = parseTags(tagsString);
     const storage = new StorageService(c.env.R2_BUCKET);

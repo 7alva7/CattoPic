@@ -80,15 +80,37 @@ app.post('/api/tags/batch', authMiddleware, batchTagsHandler);
 app.get('/api/config', authMiddleware, configHandler);
 app.post('/api/cleanup', authMiddleware, cleanupHandler);
 
-// 404 handler
+// 404 handler - ensure CORS headers are included
 app.notFound((c) => {
-  return c.json({ success: false, error: 'Not found' }, 404);
+  return new Response(
+    JSON.stringify({ success: false, error: 'Not found' }),
+    {
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    }
+  );
 });
 
-// Error handler
+// Error handler - ensure CORS headers are included
 app.onError((err, c) => {
   console.error('Error:', err);
-  return c.json({ success: false, error: 'Internal server error' }, 500);
+  return new Response(
+    JSON.stringify({ success: false, error: 'Internal server error' }),
+    {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    }
+  );
 });
 
 // Scheduled handler for cron jobs - cleanup expired images

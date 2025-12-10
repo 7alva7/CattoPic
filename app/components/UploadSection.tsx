@@ -8,7 +8,7 @@ import { api } from '../utils/request'
 import { UploadIcon, ExclamationTriangleIcon, ImageIcon } from '../components/ui/icons'
 import { formatFileSize } from '../utils/imageUtils'
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 10MB
 
 interface UploadSectionProps {
   onUpload: (files: File[], expiryMinutes: number, tags: string[]) => Promise<void>
