@@ -16,7 +16,7 @@ Behavior and architecture work MUST go through OpenSpec (`openspec/`). Propose a
 
 - `pnpm install`
 - `pnpm dev`: Vite + workerd (http://localhost:5173)
-- `pnpm build` / `pnpm deploy`
+- `pnpm build` / `pnpm run deploy`
 - `pnpm typecheck` / `pnpm test` / `pnpm lint`
 
 ## Coding Style & Naming Conventions

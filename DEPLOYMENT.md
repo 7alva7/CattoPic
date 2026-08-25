@@ -39,7 +39,7 @@ pnpm wrangler d1 migrations apply CattoPic-D1 --remote
 pnpm wrangler d1 execute CattoPic-D1 --remote --command "
 INSERT OR IGNORE INTO api_keys (key, created_at) VALUES ('your-api-key', datetime('now'));
 "
-pnpm deploy
+pnpm run deploy
 ```
 
 部署输出里的 `*.workers.dev`（或已绑的自定义域）就是管理界面和 API 的地址。
@@ -51,7 +51,7 @@ curl -X POST -H "Authorization: Bearer your-api-key" \
 
 ## R2 公开访问
 
-图床 URL 需要桶可公开读（自定义域或 r2.dev）。在 R2 桶设置里打开 Public access，把自定义域写进 `wrangler.jsonc` 的 `vars.R2_PUBLIC_URL`，再 `pnpm deploy`。
+图床 URL 需要桶可公开读（自定义域或 r2.dev）。在 R2 桶设置里打开 Public access，把自定义域写进 `wrangler.jsonc` 的 `vars.R2_PUBLIC_URL`，再 `pnpm run deploy`。
 
 ## GitHub Actions
 

@@ -6,6 +6,10 @@
 
 ## [未发布]
 
+### 修复
+
+- GitHub Actions 和文档改为 `pnpm run deploy`。直接写 `pnpm deploy` 会走 pnpm 的 workspace 发布命令，报 `ERR_PNPM_CANNOT_DEPLOY`。
+
 ## [1.0.0] - 2026-08-25
 
 单 Worker 应用的首个版本。管理界面和 API 共用一个域名。图片字节仍由 `R2_PUBLIC_URL` 提供。
@@ -20,7 +24,7 @@
 
 ### 变更
 
-- 用 Vite + React Router + `@cloudflare/vite-plugin` 替换 Next.js / Vercel。本地与生产均为一条 `pnpm dev` / `pnpm deploy`。
+- 用 Vite + React Router + `@cloudflare/vite-plugin` 替换 Next.js / Vercel。本地与生产均为一条 `pnpm dev` / `pnpm run deploy`。
 - 界面请求相对路径 `/api/*`。Worker 域名即界面 origin。图片文件仍走 `R2_PUBLIC_URL`。
 - `wrangler.jsonc` 绑定生产资源：R2 `cattopic`、D1 `CattoPic-D1`、KV `cattopic-kv`、Queue `cattopic-delete-queue`、Images `IMAGES`。`USE_QUEUE` 为 `"true"`。
 - 配置改为 `wrangler.jsonc`，`run_worker_first: ["/api/*"]`。`compatibility_date` 为 `2026-08-25`。

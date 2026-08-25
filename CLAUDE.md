@@ -16,7 +16,7 @@ Behavior changes go through OpenSpec (`openspec/`).
 pnpm install
 pnpm dev          # Vite + workerd at localhost:5173
 pnpm build        # SPA + worker
-pnpm deploy       # wrangler deploy
+pnpm run deploy   # vite build && wrangler deploy
 pnpm typecheck
 pnpm test
 pnpm wrangler d1 migrations apply <database> --remote

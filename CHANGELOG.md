@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- GitHub Actions and docs call `pnpm run deploy`. Bare `pnpm deploy` is pnpm's workspace publish command and fails with `ERR_PNPM_CANNOT_DEPLOY`.
+
 ## [1.0.0] - 2026-08-25
 
 First release of the single-Worker app. Admin UI and API share one hostname. Image bytes stay on `R2_PUBLIC_URL`.
@@ -20,7 +24,7 @@ First release of the single-Worker app. Admin UI and API share one hostname. Ima
 
 ### Changed
 
-- Replace Next.js + Vercel with Vite + React Router + `@cloudflare/vite-plugin`. One `pnpm dev` / `pnpm deploy`.
+- Replace Next.js + Vercel with Vite + React Router + `@cloudflare/vite-plugin`. One `pnpm dev` / `pnpm run deploy`.
 - UI calls relative `/api/*`. Worker hostname is the UI origin. `R2_PUBLIC_URL` remains the image object CDN.
 - Bind production resources in `wrangler.jsonc`: R2 `cattopic`, D1 `CattoPic-D1`, KV `cattopic-kv`, Queue `cattopic-delete-queue`, Images `IMAGES`. `USE_QUEUE` is `"true"`.
 - Config is `wrangler.jsonc` with `run_worker_first: ["/api/*"]`. `compatibility_date` is `2026-08-25`.

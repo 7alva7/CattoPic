@@ -39,7 +39,7 @@ pnpm wrangler d1 migrations apply CattoPic-D1 --remote
 pnpm wrangler d1 execute CattoPic-D1 --remote --command "
 INSERT OR IGNORE INTO api_keys (key, created_at) VALUES ('your-api-key', datetime('now'));
 "
-pnpm deploy
+pnpm run deploy
 ```
 
 The printed `*.workers.dev` URL (or your Custom Domain) is both the admin UI and the API origin.
@@ -51,7 +51,7 @@ curl -X POST -H "Authorization: Bearer your-api-key" \
 
 ## R2 public access
 
-Image URLs need the bucket readable (custom domain or r2.dev). Enable Public access on the R2 bucket, set `vars.R2_PUBLIC_URL` in `wrangler.jsonc`, then `pnpm deploy`.
+Image URLs need the bucket readable (custom domain or r2.dev). Enable Public access on the R2 bucket, set `vars.R2_PUBLIC_URL` in `wrangler.jsonc`, then `pnpm run deploy`.
 
 ## GitHub Actions
 

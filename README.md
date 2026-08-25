@@ -105,7 +105,7 @@ cd CattoPic
 pnpm install
 pnpm dev       # http://localhost:5173  (UI + API)
 pnpm build
-pnpm deploy    # wrangler deploy
+pnpm run deploy    # vite build && wrangler deploy
 pnpm typecheck
 pnpm test
 ```
@@ -118,7 +118,7 @@ pnpm wrangler d1 migrations apply CattoPic-D1 --remote
 pnpm wrangler d1 execute CattoPic-D1 --remote --command "
 INSERT OR IGNORE INTO api_keys (key, created_at) VALUES ('your-secure-api-key', datetime('now'));
 "
-pnpm deploy
+pnpm run deploy
 ```
 
 Then open `https://cattopic-worker.<subdomain>.workers.dev` (or your Custom Domain). Paste the API key in the UI.
