@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { PlusIcon, MinusIcon } from '../ui/icons';
 
 interface TagSelectorProps {
@@ -22,101 +21,55 @@ export default function TagSelector({
     return 'none';
   };
 
-  return (
-    <div className="space-y-4">
-      {/* 包含标签 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <PlusIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            包含标签
-            {includeTags.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-emerald-600 dark:text-emerald-400">
-                已选 {includeTags.length} 个
-              </span>
-            )}
-          </h3>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {availableTags.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500 italic">暂无可用标签</p>
-          ) : (
-            availableTags.map((tag) => {
-              const state = getTagState(tag);
-              const isIncluded = state === 'include';
+  const cycleTag = (tag: string) => {
+    const state = getTagState(tag);
+    if (state === 'none') onToggleInclude(tag);
+    else onToggleExclude(tag);
+  };
 
-              return (
-                <motion.button
-                  key={`include-${tag}`}
-                  onClick={() => onToggleInclude(tag)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`
-                    px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-                    ${isIncluded
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }
-                    ${state === 'exclude' ? 'opacity-40' : ''}
-                  `}
-                >
-                  {tag}
-                </motion.button>
-              );
-            })
-          )}
-        </div>
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">标签</h3>
+        <p className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            包含
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-red-500" />
+            排除
+          </span>
+          <span>点击切换</span>
+        </p>
       </div>
 
-      {/* 分割线 */}
-      <div className="border-t border-gray-200 dark:border-gray-700" />
-
-      {/* 排除标签 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-            <MinusIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
-          </div>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            排除标签
-            {excludeTags.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-red-600 dark:text-red-400">
-                已排除 {excludeTags.length} 个
-              </span>
-            )}
-          </h3>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {availableTags.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500 italic">暂无可用标签</p>
-          ) : (
-            availableTags.map((tag) => {
-              const state = getTagState(tag);
-              const isExcluded = state === 'exclude';
-
-              return (
-                <motion.button
-                  key={`exclude-${tag}`}
-                  onClick={() => onToggleExclude(tag)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`
-                    px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-                    ${isExcluded
-                      ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }
-                    ${state === 'include' ? 'opacity-40' : ''}
-                  `}
-                >
-                  {tag}
-                </motion.button>
-              );
-            })
-          )}
-        </div>
+      <div className="flex flex-wrap gap-2">
+        {availableTags.length === 0 ? (
+          <p className="text-sm text-gray-400 dark:text-gray-500">暂无可用标签</p>
+        ) : (
+          availableTags.map((tag) => {
+            const state = getTagState(tag);
+            return (
+              <button
+                type="button"
+                key={tag}
+                onClick={() => cycleTag(tag)}
+                className={`chip transition-colors ${
+                  state === 'include'
+                    ? 'bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
+                    : state === 'exclude'
+                    ? 'bg-linear-to-r from-red-500 to-rose-500 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {state === 'include' && <PlusIcon className="h-3.5 w-3.5" />}
+                {state === 'exclude' && <MinusIcon className="h-3.5 w-3.5" />}
+                {tag}
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );

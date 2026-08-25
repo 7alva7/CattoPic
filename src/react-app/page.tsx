@@ -8,7 +8,6 @@ import Header from './components/Header'
 import UploadSection from './components/UploadSection'
 import ImageSidebar from './components/ImageSidebar'
 import PreviewSidebar from './components/upload/PreviewSidebar'
-import CompressionSettings from './components/upload/CompressionSettings'
 import { motion } from 'motion/react'
 import { ImageIcon, PlusCircledIcon } from './components/ui/icons'
 import { useDeleteImage } from './hooks/useImages'
@@ -469,6 +468,10 @@ export default function Home() {
         compressionMaxWidth={compressionMaxWidth}
         preserveAnimation={preserveAnimation}
         outputFormat={outputFormat}
+        onQualityChange={setCompressionQuality}
+        onMaxWidthChange={setCompressionMaxWidth}
+        onPreserveAnimationChange={setPreserveAnimation}
+        onOutputFormatChange={setOutputFormat}
         onZipUploadComplete={(results) => {
           // ZIP上传完成后刷新图片缓存
           primeImagesListCache(results)
@@ -479,20 +482,6 @@ export default function Home() {
         }}
       />
 
-      {/* 压缩设置 */}
-      <div className="mt-6">
-        <CompressionSettings
-          quality={compressionQuality}
-          maxWidth={compressionMaxWidth}
-          preserveAnimation={preserveAnimation}
-          outputFormat={outputFormat}
-          onQualityChange={setCompressionQuality}
-          onMaxWidthChange={setCompressionMaxWidth}
-          onPreserveAnimationChange={setPreserveAnimation}
-          onOutputFormatChange={setOutputFormat}
-        />
-      </div>
-
       {/* 只有在有上传结果且结果侧边栏关闭时显示 */}
       {uploadResults.length > 0 && !showResultSidebar && (
         <motion.button
@@ -500,7 +489,7 @@ export default function Home() {
           animate={{ opacity: 1, scale: 1 }}
           whileHover={{ scale: 1.1 }}
           onClick={() => setShowResultSidebar(true)}
-          className="fixed bottom-6 right-6 bg-indigo-600 dark:bg-indigo-500 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all z-20 flex items-center justify-center"
+          className="fab fixed bottom-6 right-6 z-20"
           title="查看已上传图片"
         >
           <div className="relative">
@@ -517,7 +506,7 @@ export default function Home() {
           animate={{ opacity: 1, scale: 1 }}
           whileHover={{ scale: 1.1 }}
           onClick={() => setShowPreviewSidebar(true)}
-          className="fixed bottom-20 right-6 bg-indigo-500 dark:bg-indigo-400 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all z-20 flex items-center justify-center"
+          className="fab fixed bottom-20 right-6 z-20"
           title="查看待上传图片"
         >
           <div className="relative">

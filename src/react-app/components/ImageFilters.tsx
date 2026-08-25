@@ -128,10 +128,11 @@ export default function ImageFilters({ onFilterChange }: ImageFiltersProps) {
     return (
       <div className="relative" ref={dropdownRefs[type]}>
         <button
+          type="button"
           onClick={() => setActiveDropdown(isActive ? null : type)}
-          className={`w-full px-4 py-3 rounded-xl text-sm transition-all duration-200 flex items-center justify-between ${
+          className={`flex h-10 w-full items-center justify-between rounded-xl px-4 text-sm transition-all duration-200 ${
             isActive
-              ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30"
+              ? "bg-linear-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30"
               : "bg-slate-200 dark:bg-gray-800/40 text-slate-700 dark:text-gray-300 hover:bg-slate-300 dark:hover:bg-gray-800/60 backdrop-blur-md border border-slate-300/50 dark:border-transparent"
           }`}
         >
@@ -161,7 +162,7 @@ export default function ImageFilters({ onFilterChange }: ImageFiltersProps) {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="搜索标签..."
-                      className="w-full px-3 py-2 pl-9 rounded-lg bg-gray-100 dark:bg-gray-700/50 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/50 text-sm"
+                      className="input-primary pl-9 bg-gray-100 dark:bg-gray-700/50"
                     />
                     <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
                   </div>
@@ -171,8 +172,9 @@ export default function ImageFilters({ onFilterChange }: ImageFiltersProps) {
               <div className={`${type === "tag" ? "max-h-60" : ""} overflow-y-auto`}>
                 {type === "tag" && (
                   <button
+                    type="button"
                     onClick={() => handleFilterChange("tag", "")}
-                    className={`w-full px-4 py-2.5 text-sm text-left transition-colors ${
+                    className={`flex h-10 w-full items-center px-4 text-left text-sm transition-colors ${
                       tag === ""
                         ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
@@ -183,9 +185,10 @@ export default function ImageFilters({ onFilterChange }: ImageFiltersProps) {
                 )}
                 {getOptions().map(option => (
                   <button
+                    type="button"
                     key={option.value}
                     onClick={() => handleFilterChange(type, option.value)}
-                    className={`w-full px-4 py-2.5 text-sm text-left transition-colors ${
+                    className={`flex h-10 w-full items-center px-4 text-left text-sm transition-colors ${
                       (type === "format" && format === option.value) ||
                       (type === "orientation" && orientation === option.value) ||
                       (type === "tag" && tag === option.value)
@@ -214,7 +217,7 @@ export default function ImageFilters({ onFilterChange }: ImageFiltersProps) {
     <>
       <motion.button
         onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-        className="filter-toggle-button fixed bottom-6 right-6 z-50 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-3.5 shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:scale-110"
+        className="filter-toggle-button fab fixed bottom-6 right-6 z-50"
         whileHover={{ rotate: 90 }}
         whileTap={{ scale: 0.9 }}
       >

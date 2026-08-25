@@ -65,11 +65,12 @@ export default function ZipUploadProgress({
         </div>
         {!isCompleted && (
           <button
+            type="button"
             onClick={onCancel}
-            className="text-light-text-secondary dark:text-dark-text-secondary hover:text-red-500 transition-colors"
+            className="btn-icon-sm hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
             title="取消"
           >
-            <Cross1Icon className="h-5 w-5" />
+            <Cross1Icon className="h-4 w-4" />
           </button>
         )}
       </div>

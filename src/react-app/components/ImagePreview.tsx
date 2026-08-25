@@ -39,12 +39,12 @@ export const ImagePreview = ({
   }
 
   return (
-    <div className="relative h-full w-full flex items-center justify-center bg-black/5 dark:bg-black/30 min-h-[12rem]">
+    <div className="relative h-full w-full flex items-center justify-center bg-slate-100 dark:bg-slate-950 min-h-[16rem]">
       {imageUrl && (
         <img
           src={imageUrl}
           alt={image.originalName || ''}
-          className={`max-h-[50vh] max-w-full object-contain ${
+          className={`h-full w-full max-h-full max-w-full object-contain p-4 ${
             isLoading ? 'opacity-0' : 'opacity-100'
           }`}
           loading={priority ? 'eager' : 'lazy'}
@@ -58,7 +58,7 @@ export const ImagePreview = ({
         <a
           href={imageUrl}
           download={image.originalName}
-          className="absolute bottom-4 right-4 bg-indigo-500 hover:bg-indigo-600 text-white p-2 rounded-full shadow-lg transition-colors duration-300"
+          className="fab absolute bottom-4 right-4"
           onClick={(e) => e.stopPropagation()}
           title="下载GIF"
         >
