@@ -6,61 +6,67 @@
 
 ## [未发布]
 
+## [1.0.0] - 2026-08-25
+
+单 Worker 应用的首个版本。管理界面和 API 共用一个域名。图片字节仍由 `R2_PUBLIC_URL` 提供。
+
 ### 新增
 
-- **持久化 R2 删除任务** - 新增 D1 `deletion_jobs` 重试表，图片元数据可以立即删除，R2 清理失败后仍可由 Queue/Cron/手动清理恢复。
-- **Cloudflare Queues 可选化** - R2 文件删除不再强制依赖 Cloudflare Queues。在 wrangler.toml 中设置 `USE_QUEUE = 'true'` 使用异步队列删除，设置为 `'false'` 则使用同步删除（无需付费 Queue 功能）。
-- **ZIP 批量上传** - 支持通过 ZIP 压缩包批量上传图片
-  - 使用 JSZip 在浏览器端解压
-  - 分批处理（每批 50 张）防止内存溢出
-  - 实时显示解压和上传进度
-  - 支持为所有图片设置统一标签
-  - 自动跳过非图片文件和超过 70MB 的文件
+- **OpenSpec** — 在 `openspec/` 下冻结现有行为（`preserve-cattopic-behavior` 已归档），并用 `unify-on-workers` 跟踪合并。
+- **同域 Worker SPA** — 管理界面作为 Cloudflare Static Assets 与 Hono API 部署在同一个 Worker。`GET /` 与 `GET /manage` 不调用 Worker 脚本。
+- **持久化 R2 删除任务** — D1 `deletion_jobs` 表：元数据可以立即删除，R2 清理失败后由 Queue、Cron 或 `POST /api/cleanup` 重试。
+- **Cloudflare Queues 可选** — 在 `wrangler.jsonc` 中设置 `USE_QUEUE` 为 `"true"` 使用异步删除，为 `"false"` 则同步删除。
+- **ZIP 批量上传** — 浏览器用 JSZip 解压，每批 50 张，统一标签，跳过非图片和超过 70MB 的文件。
 
 ### 变更
 
-- API Base URL 解析改为统一复用运行时 `/api/config` helper，覆盖普通请求、API Key 校验和 URL 拼接。
-- 过期图片清理会先写入持久化 R2 删除任务，再在后台删除文件，并支持 Cron/手动清理重试。
-- Worker 部署 workflow 改用 pnpm 10.24.0，与 Worker package manager 和 lockfile 生成版本保持一致。
-- Worker 会通过 D1 binding 懒创建 `deletion_jobs` 表，已有部署无需手动执行迁移命令。
-- Worker 部署流程改用 Node.js 24，以兼容当前 Wrangler/Undici 工具链。
-- 当 WebP/AVIF 文件未生成/缺失时（例如超过 10MB 的上传），改用 Cloudflare Transform Images URL（`/cdn-cgi/image/...`）作为兜底输出方式。
-- `/api/random` 改为 302 重定向到实际图片 URL（不再由 Worker 代理回源返回图片字节，Transform-URL 场景更稳定）。
-- 关闭 Next.js 图片优化（图片已使用 Transform-URL 输出，无需再二次优化）。
-- Transform-URL 参数改为严格按配置输出（不再附加额外参数；未设置最大尺寸时不强制 AVIF 缩放）。
-- 管理页瀑布流列表引入 TanStack Virtual 虚拟渲染，保持大图库场景下 DOM 数量稳定。
-- 上传页侧边栏（预览/结果）引入 TanStack Virtual 虚拟渲染，提升大批量场景下的滚动流畅度。
-- UI 列表/网格统一使用 `/cdn-cgi/image/width=...` 请求缩略图，降低带宽与解码开销。
-- `/api/images` 新增 `format` 后端筛选（`all|gif|webp|avif|original`），减少大图库场景下前端筛选与处理开销。
-- 管理页单页加载数量从 24 提升到 60，减少滚动过程中的请求次数与抖动。
-- 默认 `maxUploadCount` 调整为 50，并发上传数量统一调整为 5（含 AVIF）。
-
-### 废弃
+- 用 Vite + React Router + `@cloudflare/vite-plugin` 替换 Next.js / Vercel。本地与生产均为一条 `pnpm dev` / `pnpm deploy`。
+- 界面请求相对路径 `/api/*`。Worker 域名即界面 origin。图片文件仍走 `R2_PUBLIC_URL`。
+- `wrangler.jsonc` 绑定生产资源：R2 `cattopic`、D1 `CattoPic-D1`、KV `cattopic-kv`、Queue `cattopic-delete-queue`、Images `IMAGES`。`USE_QUEUE` 为 `"true"`。
+- 配置改为 `wrangler.jsonc`，`run_worker_first: ["/api/*"]`。`compatibility_date` 为 `2026-08-25`。
+- Images binding 压缩仅用于 ≤20MB 文件（官方 `.input()` 上限）。对外上传上限仍为 70MB。
+- AVIF 长边限制为 1200px（Cloudflare Images 限额）。
+- 图库缩略图 `/cdn-cgi/image` 宽度量化为 400/800/1200，控制 unique transformation。
+- 去掉 KV prefix list+delete 失效。图库以 D1 为准。
+- 生产日志采样 5%。
+- 过期图片清理会写入持久化 R2 删除任务，并由 Cron / 手动清理重试。
+- `/api/random` 改为 302 重定向到实际图片 URL，不再由 Worker 代理图片字节。
+- `/api/images` 增加 `format` 筛选：`all|gif|webp|avif|original`。
+- 管理页单页 60 张；默认 `maxUploadCount` 为 50；上传并发为 5。
+- 管理页瀑布流和上传侧边栏使用 TanStack Virtual。
+- UI 列表使用 `/cdn-cgi/image/width=...` 请求缩略图。
+- Transform-URL 参数按配置输出（不再附加额外参数；未设置最大尺寸时不强制 AVIF 缩放）。
+- GitHub Actions 使用 pnpm 10.24.0 和 Node.js 24；Secrets 仅为 `CLOUDFLARE_API_TOKEN` 与 `CLOUDFLARE_ACCOUNT_ID`。
 
 ### 移除
 
+- Next.js App Router 前端、Vercel 部署、`NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_WORKER_URL`，以及未鉴权的 Next `/api/config` 发现接口。
+- 独立的 `worker/` 包（`worker/package.json`、`worker/wrangler.toml`）。
+- 文档中的 `GET /r2/*` Worker 图片反代（代码里从未实现）。图片字节从 `R2_PUBLIC_URL` 读取。
+
 ### 修复
 
-- 修复 `PUT /api/images/:id` 中 `expiryMinutes: 0` 无法清除图片过期时间的问题。
-- 在定时清理真正删除过期图片前，列表、详情、随机图和标签计数读取都会先隐藏已过期图片。
-- 修复批量改标签、删除标签和过期清理后 image detail KV 缓存可能返回旧数据的问题。
-- 批量标签更新增加数量上限和 D1 分片执行，避免触发 SQL 变量数/语句长度限制。
-- API Key 鉴权不再把每个受保护读请求都变成 D1 写入；`last_used_at` 仅在校验 API Key 时更新。
-- 修复中文 API 文档仍使用 `/api/upload` 的问题，并统一部署文档中的 Worker compatibility date。
-- 修复 Dependabot lockfile 漂移导致 Vercel frozen install 失败的问题：根目录 `dotenv` 的 manifest specifier 现在与 `pnpm-lock.yaml` 保持一致。
-- Worker 处理器在调用元数据/缓存服务前，会先校验缺失或格式错误的图片/标签路由参数。
-- 修复 WebP 和 AVIF 图片的方向检测 - 现在会正确读取图片实际尺寸，而不是默认返回 1920x1080。
-- 修复删除图片后上传页/管理页未及时刷新（TanStack Query 缓存 + recent uploads 列表导致需强刷）。
-- 修复管理页「随机图 API 生成器」未能正确解析真实 API Base URL（改为从 `/api/config` 获取），仍输出占位链接 `https://your-worker.workers.dev` 的问题。
-- 修复 `/api/images` 分页参数无边界问题，并统一对 `/api/images/:id` 的标签更新进行清洗/归一化处理。
-- 修复管理页在未提供 API Key 时仍发起受保护接口请求的问题。
-- 修复管理页虚拟瀑布流在生产构建中出现 React #301 无限重渲染崩溃的问题。
-- 修复 `/favicon.ico` 请求返回 404（改为重定向到 `/static/favicon.ico`）。
-- 修复未设置 API Key 时仍发送 `Authorization: Bearer null` 的问题。
-- 统一清洗并校验标签路由参数（重命名/删除标签），拒绝非法标签名。
-- 上传接口支持 multipart 使用 `image` 或 `file` 作为文件字段名。
+- `PUT /api/images/:id` 中 `expiryMinutes: 0` 无法清除过期时间。
+- 定时清理真正删除前，列表、详情、随机图和标签计数都会隐藏已过期图片。
+- 批量改标签、删除标签和过期清理后 image detail 缓存可能返回旧数据。
+- 批量标签更新增加数量上限和 D1 分片，避免 SQL 变量数/语句长度限制。
+- API Key 的 `last_used_at` 仅在校验时更新，不再把每个受保护读请求都变成 D1 写入。
+- WebP / AVIF 方向检测读取实际尺寸，不再默认 1920×1080。
+- 删除图片后上传页/管理页无需强刷即可消失。
+- 随机图链接生成器使用当前 origin（同域 Worker），不再输出 `https://your-worker.workers.dev`。
+- `/api/images` 分页参数有边界；标签更新会清洗/归一化。
+- 管理页在未提供 API Key 时不再请求受保护接口。
+- 管理页虚拟瀑布流在生产构建中的 React #301 无限重渲染。
+- `/favicon.ico` 重定向到 `/static/favicon.ico`。
+- 未设置 API Key 时不再发送 `Authorization: Bearer null`。
+- 重命名/删除标签时校验路由参数。
+- 上传接口接受 `image` 或 `file` 字段名。
+- 处理器在调用元数据/缓存服务前校验缺失或格式错误的图片/标签路由参数。
 
 ### 安全
 
 - 更新存在安全风险的传递依赖 lockfile 条目：`ajv`、`brace-expansion`、`flatted`、`minimatch`、`picomatch`、`postcss` 以及 Worker 侧的 `undici`。
-- 收紧标签清洗规则，避免标签管理相关接口出现意外字符输入。
+- 收紧标签管理接口的标签清洗规则。
+
+[未发布]: https://github.com/Yuri-NagaSaki/CattoPic/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Yuri-NagaSaki/CattoPic/releases/tag/v1.0.0

@@ -1,46 +1,37 @@
 # Repository Guidelines
 
+## OpenSpec
+
+Behavior and architecture work MUST go through OpenSpec (`openspec/`). Propose a change, implement against `openspec/changes/<name>/tasks.md`, then archive. Do not start a large merge or API change without an active change folder. Specs are the behavior contract; `design.md` holds implementation. Invoke `/openspec-propose`, `/openspec-apply-change`, `/openspec-archive-change`.
+
 ## Project Structure & Module Organization
 
-- `app/`: Next.js (App Router) frontend UI (React + Tailwind). Key areas:
-  - `app/components/`: UI components (upload, gallery, modals)
-  - `app/utils/`: client utilities (API requests, concurrent upload, ZIP helpers)
-- `worker/`: Cloudflare Worker backend (Hono) and infrastructure bindings:
-  - `worker/src/handlers/`: HTTP route handlers (upload/images/tags/system)
-  - `worker/src/services/`: D1/R2/KV/Images/Queue services
-  - `worker/src/utils/`: shared helpers (validation/response)
+- `src/react-app/`: Vite React SPA (`/` upload, `/manage` gallery)
+- `src/worker/`: Hono API, cron, optional queue (`handlers/`, `services/`, `utils/`, `migrations/`)
+- `openspec/`: behavior specs and changes
 - `docs/`: API and deployment docs
-- `public/`: static assets
+- `public/static/`: favicons
 
 ## Build, Test, and Development Commands
 
-Frontend (repo root):
-- `pnpm install`: install dependencies
-- `pnpm dev`: run Next.js dev server
-- `pnpm build` / `pnpm start`: production build and run
-- `pnpm lint`: ESLint checks
-- `pnpm exec tsc --noEmit`: TypeScript typecheck
-
-Worker:
-- `cd worker && pnpm install`
-- `cd worker && pnpm dev`: local Worker via `wrangler dev`
-- `cd worker && pnpm deploy`: deploy Worker
-- `cd worker && pnpm tail`: stream logs
-- `pnpm -C worker exec tsc --noEmit`: Worker typecheck
+- `pnpm install`
+- `pnpm dev`: Vite + workerd (http://localhost:5173)
+- `pnpm build` / `pnpm deploy`
+- `pnpm typecheck` / `pnpm test` / `pnpm lint`
 
 ## Coding Style & Naming Conventions
 
 - TypeScript throughout; prefer 2-space indentation and existing file patterns.
 - React components: `PascalCase.tsx`; hooks: `useSomething.ts`.
-- Worker routes live in `worker/src/handlers/*` and are wired in `worker/src/index.ts`.
+- Worker routes live in `src/worker/handlers/*` and are wired in `src/worker/index.ts`.
 - Keep changes scoped: avoid refactors unrelated to the task.
 
 ## Testing Guidelines
 
-There is no dedicated test runner yet. Validate changes with:
-- `pnpm exec tsc --noEmit` (and `pnpm -C worker exec tsc --noEmit`)
+- `pnpm test` (Vitest)
+- `pnpm typecheck`
 - `pnpm lint`
-- Manual smoke tests: run `wrangler dev` and exercise endpoints (e.g. `POST /api/upload/single`, `DELETE /api/tags/:name`).
+- Manual smoke: `pnpm dev` and exercise endpoints (e.g. `POST /api/upload/single`, `GET /api/random` 302, `DELETE /api/tags/:name`).
 
 ## Commit & Pull Request Guidelines
 
@@ -50,9 +41,9 @@ There is no dedicated test runner yet. Validate changes with:
 
 ## Security & Configuration Tips
 
-- Do not commit secrets. Use `.env.example` and `worker/wrangler.example.toml` as templates.
-- Frontend expects `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_REMOTE_PATTERNS`.
-- Worker binds R2/D1/KV/Queues/Images via `worker/wrangler.toml`.
+- Do not commit secrets. Use `.env.example` and `wrangler.example.jsonc` as templates.
+- UI calls same-origin `/api/*`. Image bytes use `R2_PUBLIC_URL`.
+- Worker binds R2/D1/KV/Queues/Images via `wrangler.jsonc`. Never set `run_worker_first` to true.
 
 
 ## Additional Agent Rules

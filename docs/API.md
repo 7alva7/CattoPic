@@ -4,22 +4,27 @@
 
 ## 概述
 
-CattoPic 是一个图像托管和管理服务，提供图像上传、存储、格式转换和随机获取等功能。
+CattoPic 1.0 把管理界面和 API 放在同一个 Cloudflare Worker。浏览器打开 Worker 域名就是界面；HTTP 客户端调用同一域名下的 `/api/*`。
+
+图片文件不经过 Worker。对象存在 R2，由 `R2_PUBLIC_URL` 对外提供。
 
 ### 基础信息
 
 | 项目 | 说明 |
 |------|------|
-| Base URL | `https://your-worker.workers.dev` |
-| 认证方式 | Bearer Token (API Key) |
-| 响应格式 | JSON |
+| API 基址 | Worker 域名。下文示例使用 `https://app.example.com` |
+| 图片基址 | `wrangler.jsonc` 中的 `R2_PUBLIC_URL`。下文示例使用 `https://r2.example.com` |
+| 认证方式 | Bearer Token（API Key） |
+| 响应格式 | JSON（`GET /api/random` 成功时为 302） |
 | 字符编码 | UTF-8 |
 
 ### 技术架构
 
-- **后端框架**: Hono (Cloudflare Workers)
-- **数据库**: Cloudflare D1 (SQLite)
-- **存储**: Cloudflare R2 (对象存储)
+- **界面**: Vite + React，作为 Worker Static Assets
+- **API**: Hono，仅 `/api/*` 调用 Worker 脚本
+- **数据库**: Cloudflare D1（SQLite）
+- **存储**: Cloudflare R2（对象存储）
+- **压缩**: Cloudflare Images binding（单文件 ≤20MB）
 
 ---
 
@@ -85,74 +90,59 @@ GET /api/random
 
 ```bash
 # 获取随机图像
-curl "https://your-worker.workers.dev/api/random"
+curl -L "https://app.example.com/api/random"
 
 # 获取带标签过滤的随机图像
-curl "https://your-worker.workers.dev/api/random?tags=nature,outdoor&orientation=landscape"
+curl -L "https://app.example.com/api/random?tags=nature,outdoor&orientation=landscape"
 
 # 获取 WebP 格式
-curl "https://your-worker.workers.dev/api/random?format=webp" -o random.webp
+curl -L "https://app.example.com/api/random?format=webp" -o random.webp
 ```
 
 **使用场景示例**
 
 ```bash
 # 场景 1: 网站随机背景图（桌面端横向）
-curl "https://your-worker.workers.dev/api/random?orientation=landscape&format=webp"
+curl -L "https://app.example.com/api/random?orientation=landscape&format=webp"
 
 # 场景 2: 手机壁纸 API（竖向）
-curl "https://your-worker.workers.dev/api/random?orientation=portrait&tags=wallpaper"
+curl -L "https://app.example.com/api/random?orientation=portrait&tags=wallpaper"
 
 # 场景 3: 猫咪图片 API（排除 NSFW 内容）
-curl "https://your-worker.workers.dev/api/random?tags=cat&exclude=nsfw,private"
+curl -L "https://app.example.com/api/random?tags=cat&exclude=nsfw,private"
 
 # 场景 4: 自然风景（多标签组合）
-curl "https://your-worker.workers.dev/api/random?tags=nature,landscape&exclude=city"
+curl -L "https://app.example.com/api/random?tags=nature,landscape&exclude=city"
 
 # 场景 5: 在 HTML img 标签中直接使用
-# <img src="https://your-worker.workers.dev/api/random?orientation=auto" />
+# <img src="https://app.example.com/api/random?orientation=auto" />
 
 # 场景 6: 自动方向检测（根据 User-Agent）
 # 移动设备会返回竖向图片，桌面设备会返回横向图片
-curl -A "Mozilla/5.0 (iPhone)" "https://your-worker.workers.dev/api/random?orientation=auto"
+curl -L -A "Mozilla/5.0 (iPhone)" "https://app.example.com/api/random?orientation=auto"
 ```
 
 ---
 
-### 获取图像文件
+### 图像文件（R2 公网）
 
-直接获取 R2 存储中的图像文件。
+Worker **没有** `GET /r2/{path}`。图片字节从 `R2_PUBLIC_URL` 直接读取。
 
-**请求**
+**对象键**
 
-```
-GET /r2/{path}
-```
+| 变体 | 键 |
+|------|-----|
+| 原图 | `original/{orientation}/{id}.{ext}` |
+| WebP | `{orientation}/webp/{id}.webp` |
+| AVIF | `{orientation}/avif/{id}.avif` |
 
-**路径参数**
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `path` | string | R2 中的对象路径 |
-
-**响应**
-
-- **成功**: 返回图像二进制数据
-  - `Cache-Control`: `public, max-age=31536000` (1年缓存)
-
-- **失败**:
-```json
-{
-  "success": false,
-  "error": "Not found"
-}
-```
-
-**curl 示例**
+GIF 只保存原图。大于 20MB 的 JPEG/PNG 不会写入 WebP/AVIF 对象；接口返回的 `urls.webp` / `urls.avif` 可能是 `https://r2.example.com/cdn-cgi/image/...` 转换地址。
 
 ```bash
-curl "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg" -o image.jpg
+curl "https://r2.example.com/original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg" -o image.jpg
 ```
+
+`GET /api/random` 的 `Location` 指向这类 URL。需要跟着重定向下载文件时使用 `curl -L`。
 
 ---
 
@@ -201,9 +191,9 @@ Authorization: Bearer <api-key>
       "width": 1920,
       "height": 1080,
       "paths": {
-        "original": "images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-        "webp": "images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-        "avif": "images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+        "original": "original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+        "webp": "landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+        "avif": "landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
       },
       "sizes": {
         "original": 245632,
@@ -211,9 +201,9 @@ Authorization: Bearer <api-key>
         "avif": 134567
       },
       "urls": {
-        "original": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-        "webp": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-        "avif": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+        "original": "https://r2.example.com/original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+        "webp": "https://r2.example.com/landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+        "avif": "https://r2.example.com/landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
       }
     }
   ],
@@ -229,11 +219,11 @@ Authorization: Bearer <api-key>
 ```bash
 # 获取第一页
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images?page=1&limit=12"
+  "https://app.example.com/api/images?page=1&limit=12"
 
 # 按标签过滤
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images?tag=nature&orientation=landscape"
+  "https://app.example.com/api/images?tag=nature&orientation=landscape"
 ```
 
 ---
@@ -270,9 +260,9 @@ GET /api/images/{id}
     "width": 1920,
     "height": 1080,
     "paths": {
-      "original": "images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-      "webp": "images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-      "avif": "images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+      "original": "original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+      "webp": "landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+      "avif": "landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
     },
     "sizes": {
       "original": 245632,
@@ -280,9 +270,9 @@ GET /api/images/{id}
       "avif": 134567
     },
     "urls": {
-      "original": "https://your-worker.workers.dev/r2/images/...",
-      "webp": "https://your-worker.workers.dev/r2/images/...",
-      "avif": "https://your-worker.workers.dev/r2/images/..."
+      "original": "https://r2.example.com/original/landscape/...",
+      "webp": "https://r2.example.com/landscape/webp/...",
+      "avif": "https://r2.example.com/landscape/avif/..."
     }
   }
 }
@@ -308,7 +298,7 @@ GET /api/images/{id}
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images/550e8400-e29b-41d4-a716-446655440000"
+  "https://app.example.com/api/images/550e8400-e29b-41d4-a716-446655440000"
 ```
 
 ---
@@ -361,7 +351,7 @@ curl -X PUT \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"tags": ["nature", "outdoor"], "expiryMinutes": 1440}' \
-  "https://your-worker.workers.dev/api/images/550e8400-e29b-41d4-a716-446655440000"
+  "https://app.example.com/api/images/550e8400-e29b-41d4-a716-446655440000"
 ```
 
 ---
@@ -403,7 +393,7 @@ DELETE /api/images/{id}
 ```bash
 curl -X DELETE \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images/550e8400-e29b-41d4-a716-446655440000"
+  "https://app.example.com/api/images/550e8400-e29b-41d4-a716-446655440000"
 ```
 
 ---
@@ -451,9 +441,9 @@ Content-Type: multipart/form-data
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "status": "success",
     "urls": {
-      "original": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-      "webp": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-      "avif": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+      "original": "https://r2.example.com/original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+      "webp": "https://r2.example.com/landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+      "avif": "https://r2.example.com/landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
     },
     "orientation": "landscape",
     "tags": ["nature", "outdoor"],
@@ -467,11 +457,13 @@ Content-Type: multipart/form-data
 }
 ```
 
-**自动功能**
+**自动处理**
 
-- 自动检测图像方向（landscape/portrait）
-- 自动生成 WebP 和 AVIF 格式版本
-- 自动计算过期时间
+- 检测方向（`landscape` / `portrait`）
+- JPEG/PNG 且 ≤20MB：写入 WebP 和 AVIF 对象
+- 更大的 JPEG/PNG：只存原图，变体 URL 使用 `/cdn-cgi/image`
+- GIF / 已是 WebP 或 AVIF：只存原图
+- 按 `expiryMinutes` 计算过期时间
 
 **curl 示例**
 
@@ -481,7 +473,7 @@ curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "image=@photo.jpg" \
   -F "tags=nature,outdoor" \
-  "https://your-worker.workers.dev/api/upload/single"
+  "https://app.example.com/api/upload/single"
 ```
 
 ---
@@ -516,7 +508,7 @@ GET /api/tags
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/tags"
+  "https://app.example.com/api/tags"
 ```
 
 ---
@@ -570,7 +562,7 @@ curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "mountain"}' \
-  "https://your-worker.workers.dev/api/tags"
+  "https://app.example.com/api/tags"
 ```
 
 ---
@@ -627,7 +619,7 @@ curl -X PUT \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"newName": "mountains"}' \
-  "https://your-worker.workers.dev/api/tags/mountain"
+  "https://app.example.com/api/tags/mountain"
 ```
 
 ---
@@ -663,7 +655,7 @@ DELETE /api/tags/{name}
 ```bash
 curl -X DELETE \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/tags/mountain"
+  "https://app.example.com/api/tags/mountain"
 ```
 
 ---
@@ -717,7 +709,7 @@ curl -X POST \
     "addTags": ["landscape"],
     "removeTags": ["draft"]
   }' \
-  "https://your-worker.workers.dev/api/tags/batch"
+  "https://app.example.com/api/tags/batch"
 ```
 
 ---
@@ -754,7 +746,7 @@ Authorization: Bearer <api-key>
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/validate-api-key"
+  "https://app.example.com/api/validate-api-key"
 ```
 
 ---
@@ -794,7 +786,7 @@ GET /api/config
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/config"
+  "https://app.example.com/api/config"
 ```
 
 ---
@@ -830,7 +822,7 @@ POST /api/cleanup
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/cleanup"
+  "https://app.example.com/api/cleanup"
 ```
 
 ---
@@ -927,9 +919,11 @@ interface ApiResponse<T = unknown> {
 | 状态码 | 含义 |
 |--------|------|
 | 200 | 成功 |
+| 302 | `/api/random` 重定向到图片 URL |
 | 400 | 请求格式错误 |
 | 401 | 未授权（缺少或无效的 API Key） |
 | 404 | 资源不存在 |
+| 413 | 文件过大或批量操作超限 |
 | 500 | 服务器内部错误 |
 
 ### 错误响应格式
@@ -948,19 +942,19 @@ interface ApiResponse<T = unknown> {
 | 错误信息 | 说明 |
 |----------|------|
 | `Unauthorized` | API Key 无效或缺失 |
-| `Invalid image ID` | 图像 ID 格式不正确（非 UUID） |
-| `Image not found` | 图像不存在 |
+| `无效的图片ID` | 图像 ID 不是合法 UUID |
+| `图片不存在` | 图像不存在 |
 | `No images found matching criteria` | 没有符合条件的图像 |
-| `File exceeds maximum size of 10MB` | 文件超过大小限制 |
-| `Too many files. Maximum is 20` | 上传文件数量超过限制 |
-| `Tag name is required` | 标签名称为空 |
-| `New name must be different from old name` | 新标签名与旧名相同 |
+| `File too large. Maximum size is 70MB` | 单文件超过 70MB |
+| `No file provided` | 未提供 `image` 或 `file` 字段 |
+| `标签名称不能为空` | 标签名称为空 |
+| `新名称不能与旧名称相同` | 新标签名与旧名相同 |
 
 ---
 
 ## CORS 配置
 
-所有 API 端点已启用 CORS：
+管理界面与 API 同源，浏览器不必跨域。`/api/*` 仍开启 CORS，供外部脚本调用：
 
 ```
 Access-Control-Allow-Origin: *
@@ -978,7 +972,7 @@ Access-Control-Max-Age: 86400
 | 接口 | 方法 | 认证 | 说明 |
 |------|------|------|------|
 | `/api/random` | GET | 否 | 获取随机图像 |
-| `/r2/*` | GET | 否 | 获取图像文件 |
+| `R2_PUBLIC_URL` 对象 | GET | 否 | 直接读图片文件（不经 Worker） |
 | `/api/images` | GET | 是 | 获取图像列表 |
 | `/api/images/:id` | GET | 是 | 获取图像详情 |
 | `/api/images/:id` | PUT | 是 | 更新图像元数据 |
@@ -996,7 +990,8 @@ Access-Control-Max-Age: 86400
 ### 前端请求示例 (JavaScript)
 
 ```javascript
-const API_URL = 'https://your-worker.workers.dev';
+// 管理界面与 API 同源时用相对路径即可。外部脚本把 API_URL 换成 Worker 域名。
+const API_URL = '';
 const API_KEY = 'your-api-key';
 
 // 获取图像列表
@@ -1009,10 +1004,10 @@ async function getImages(page = 1, limit = 12) {
   return response.json();
 }
 
-// 上传图像
-async function uploadImages(files, tags = []) {
+// 上传图像（每次一张；字段名 `image` 或 `file`）
+async function uploadImage(file, tags = []) {
   const formData = new FormData();
-  files.forEach(file => formData.append('images[]', file));
+  formData.append('image', file);
   if (tags.length > 0) {
     formData.append('tags', tags.join(','));
   }

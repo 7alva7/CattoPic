@@ -5,7 +5,14 @@ on:
     branches:
       - main
     paths:
-      - 'worker/**'
+      - 'src/**'
+      - 'public/**'
+      - 'wrangler.jsonc'
+      - 'wrangler.example.jsonc'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'index.html'
       - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 
@@ -31,24 +38,15 @@ jobs:
         with:
           node-version: '24'
           cache: 'pnpm'
-          cache-dependency-path: worker/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: worker
 
-      - name: Generate wrangler.toml
-        working-directory: worker
-        env:
-          WRANGLER_TOML_CONTENT: ${{ secrets.WRANGLER_TOML }}
-        run: printf '%s\n' "$WRANGLER_TOML_CONTENT" > wrangler.toml
+      - name: Typecheck
+        run: pnpm typecheck
 
-      - name: Typecheck Worker
-        working-directory: worker
-        run: pnpm exec tsc --noEmit
+      - name: Test
+        run: pnpm test
 
       - name: Deploy to Cloudflare
-        working-directory: worker
-        run: |
-          pnpm wrangler deploy
-          echo "✅ Deploy completed"
+        run: pnpm deploy

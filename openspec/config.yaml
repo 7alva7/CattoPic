@@ -1,0 +1,30 @@
+schema: spec-driven
+
+context: |
+  CattoPic is an image host. Package manager is pnpm only (never npm/yarn; one lockfile).
+  Runtime target after unify-on-workers: one Cloudflare Worker serving a React SPA via Static Assets plus a Hono API.
+  Bindings: R2_BUCKET, DB (D1), CACHE_KV, IMAGES, optional DELETE_QUEUE. Vars: ENVIRONMENT, R2_PUBLIC_URL, USE_QUEUE.
+  Public: GET /api/random (302 to R2 or /cdn-cgi/image URL). Protected APIs require Authorization: Bearer <api-key>.
+  R2 keys: original/{orientation}/{id}.{ext}, {orientation}/webp/{id}.webp, {orientation}/avif/{id}.avif.
+  GIF is stored original-only. Dual changelogs CHANGELOG.md and CHANGELOG_CN.md are mandatory for user-facing changes.
+  Worker cost rules: never run_worker_first true; only /api/* invokes the Worker; never proxy image bytes through the Worker; never kv.list prefix invalidation; Images binding input max 20MB; isolate memory 128MB so large uploads must stream to R2.
+  Do not specify React component names or Hono handler names in specs.
+
+rules:
+  specs:
+    - Requirements describe observable HTTP/UI behavior only
+    - Scenarios use #### Scenario with WHEN/THEN
+    - Use RFC 2119 MUST/SHALL for non-negotiable behavior
+  tasks:
+    - Each task includes how to verify it
+    - Keep tasks independently completable
+
+operations:
+  apply:
+    guidance:
+      - Preserve public API routes, auth, R2 key scheme, and random-image 302 semantics
+      - Re-read current Cloudflare Workers / Images / Static Assets docs before changing Worker code
+      - Use pnpm exclusively
+  archive:
+    guidance:
+      - Summarize which requirements moved into openspec/specs/ before finishing

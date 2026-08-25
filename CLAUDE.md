@@ -4,90 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CattoPic is an image hosting service with a Next.js frontend (deployed on Vercel) and a Cloudflare Worker backend (Hono framework) using R2 for storage and D1 for metadata.
+CattoPic is an image hosting service. A single Cloudflare Worker serves a React SPA (Static Assets) and a Hono API. R2 stores files, D1 stores metadata, KV is optional cache, Images binding compresses uploads ≤20MB.
 
-**Important: This project uses pnpm as the package manager. Do not use npm or yarn.**
+**Package manager: pnpm only.**
+
+Behavior changes go through OpenSpec (`openspec/`).
 
 ## Commands
 
-### Frontend (Next.js)
 ```bash
-pnpm dev          # Start dev server at localhost:3000
-pnpm build        # Build for production
-pnpm lint         # Run ESLint
-```
-
-### Worker (Cloudflare)
-```bash
-cd worker
-pnpm dev          # Start local worker at localhost:8787
-pnpm deploy       # Deploy to Cloudflare
-pnpm wrangler d1 execute CattoPic-D1 --remote --file=schema.sql  # Init DB schema
+pnpm install
+pnpm dev          # Vite + workerd at localhost:5173
+pnpm build        # SPA + worker
+pnpm deploy       # wrangler deploy
+pnpm typecheck
+pnpm test
+pnpm wrangler d1 migrations apply <database> --remote
 ```
 
 ## Architecture
 
 ```
-├── app/                    # Next.js 16 frontend (App Router)
-│   ├── components/         # React components
-│   ├── hooks/              # Custom React hooks
-│   ├── utils/              # Frontend utilities
-│   └── manage/             # Admin management page
-│
-└── worker/                 # Cloudflare Worker backend
-    └── src/
-        ├── index.ts        # Hono router, routes & middleware
-        ├── handlers/       # API endpoint handlers
-        │   ├── upload.ts   # Image upload with compression
-        │   ├── images.ts   # CRUD operations
-        │   ├── random.ts   # Public random image API
-        │   └── tags.ts     # Tag management
-        └── services/
-            ├── storage.ts      # R2 storage operations
-            ├── metadata.ts     # D1 database queries
-            ├── compression.ts  # Cloudflare Images compression
-            └── auth.ts         # API key validation
+├── src/react-app/          # Vite React SPA (`/`, `/manage`)
+├── src/worker/             # Hono API, cron, optional queue
+│   └── migrations/         # D1 migrations
+├── public/static/          # favicons
+├── wrangler.jsonc          # Worker + Static Assets
+└── openspec/               # behavior specs
 ```
 
-## Key Patterns
+`assets.run_worker_first` is `["/api/*"]` only. HTML/JS/CSS must not invoke the Worker.
 
-### Image Storage Structure
-Images are stored in R2 with orientation-based paths:
-- `original/{orientation}/{id}.{ext}` - Original file
-- `{orientation}/webp/{id}.webp` - WebP compressed
-- `{orientation}/avif/{id}.avif` - AVIF compressed
+## Environment
 
-GIF files are stored only as originals (no conversion).
-
-### API Authentication
-Protected endpoints require `Authorization: Bearer <api-key>` header. Public endpoints: `/api/random`, `/r2/*`.
-
-### Random Image API
-`GET /api/random` defaults to auto-orientation based on User-Agent (mobile→portrait, desktop→landscape). Supports `?orientation=landscape|portrait|auto`, `?tags=`, `?exclude=`, `?format=`.
-
-## Environment Variables
-
-### Frontend (.env.local)
-```
-NEXT_PUBLIC_WORKER_URL=http://localhost:8787  # or production Worker URL
-```
-
-### Worker (wrangler.toml)
-Bindings: `R2_BUCKET` (R2), `DB` (D1), `CACHE_KV` (KV), `IMAGES` (Cloudflare Images for compression), `DELETE_QUEUE` (optional, Cloudflare Queue)
-
-Variables: `ENVIRONMENT`, `R2_PUBLIC_URL`, `USE_QUEUE` (`'true'` to enable async Queue-based R2 deletion, `'false'` or omit for synchronous deletion)
+Copy `wrangler.example.jsonc` to `wrangler.jsonc` and fill R2/D1/KV ids. `R2_PUBLIC_URL` is the image CDN, not the Worker origin.
 
 ## Changelog
 
-**Important: When making functional changes to the codebase, you MUST update the changelog files.**
+Functional changes must update both:
 
-- `CHANGELOG.md` - English version
-- `CHANGELOG_CN.md` - Chinese version
+- `CHANGELOG.md` (English)
+- `CHANGELOG_CN.md` (中文)
 
-Follow [Keep a Changelog](https://keepachangelog.com/) format with these sections:
-- `Added` - New features
-- `Changed` - Changes to existing functionality
-- `Deprecated` - Features to be removed
-- `Removed` - Removed features
-- `Fixed` - Bug fixes
-- `Security` - Security fixes
+Keep a Changelog sections: Added, Changed, Deprecated, Removed, Fixed, Security.

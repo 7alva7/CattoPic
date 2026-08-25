@@ -1,0 +1,67 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cattopic-worker",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2026-08-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "ENVIRONMENT": "production",
+    // Image object CDN (R2 public domain). The app itself is the Worker hostname.
+    "R2_PUBLIC_URL": "https://r2.catcat.li",
+    "USE_QUEUE": "true"
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "cattopic"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "CattoPic-D1",
+      "database_id": "cb07b667-2a42-4ca1-84ce-49d5114af009",
+      "migrations_dir": "./src/worker/migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE_KV",
+      "id": "f04a33814498458a84085799828bc7d7"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "DELETE_QUEUE",
+        "queue": "cattopic-delete-queue"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "cattopic-delete-queue",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5
+      }
+    ]
+  },
+  "triggers": {
+    "crons": ["0 * * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 0.05,
+      "invocation_logs": true
+    }
+  }
+}

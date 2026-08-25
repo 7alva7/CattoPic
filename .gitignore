@@ -1,8 +1,13 @@
 .next/
 out/
+dist/
 node_modules/
 .env.local
+.dev.vars
 .wrangler/
 
-# Worker configuration (contains sensitive IDs)
+# Legacy TOML (JSONC is committed)
 worker/wrangler.toml
+wrangler.toml
+
+.grok/

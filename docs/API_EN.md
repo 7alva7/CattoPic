@@ -4,22 +4,27 @@
 
 ## Overview
 
-CattoPic is an image hosting and management service that provides image upload, storage, format conversion, and random retrieval features.
+CattoPic 1.0 serves the admin UI and the API from one Cloudflare Worker. Opening the Worker hostname loads the UI. HTTP clients call `/api/*` on that same host.
+
+Image bytes do not go through the Worker. Objects live in R2 and are served from `R2_PUBLIC_URL`.
 
 ### Basic Information
 
 | Item | Description |
 |------|-------------|
-| Base URL | `https://your-worker.workers.dev` |
+| API base URL | Worker hostname. Examples below use `https://app.example.com` |
+| Image base URL | `R2_PUBLIC_URL` in `wrangler.jsonc`. Examples below use `https://r2.example.com` |
 | Authentication | Bearer Token (API Key) |
-| Response Format | JSON |
+| Response Format | JSON (`GET /api/random` succeeds with 302) |
 | Encoding | UTF-8 |
 
 ### Tech Stack
 
-- **Backend Framework**: Hono (Cloudflare Workers)
+- **UI**: Vite + React, served as Worker Static Assets
+- **API**: Hono; only `/api/*` invokes the Worker script
 - **Database**: Cloudflare D1 (SQLite)
-- **Storage**: Cloudflare R2 (Object Storage)
+- **Storage**: Cloudflare R2 (object storage)
+- **Compression**: Cloudflare Images binding (files ≤ 20MB)
 
 ---
 
@@ -85,74 +90,59 @@ GET /api/random
 
 ```bash
 # Get random image
-curl "https://your-worker.workers.dev/api/random"
+curl -L "https://app.example.com/api/random"
 
 # Get random image with tag filtering
-curl "https://your-worker.workers.dev/api/random?tags=nature,outdoor&orientation=landscape"
+curl -L "https://app.example.com/api/random?tags=nature,outdoor&orientation=landscape"
 
 # Get WebP format
-curl "https://your-worker.workers.dev/api/random?format=webp" -o random.webp
+curl -L "https://app.example.com/api/random?format=webp" -o random.webp
 ```
 
 **Use Case Examples**
 
 ```bash
 # Use Case 1: Random website background (desktop, landscape)
-curl "https://your-worker.workers.dev/api/random?orientation=landscape&format=webp"
+curl -L "https://app.example.com/api/random?orientation=landscape&format=webp"
 
 # Use Case 2: Mobile wallpaper API (portrait)
-curl "https://your-worker.workers.dev/api/random?orientation=portrait&tags=wallpaper"
+curl -L "https://app.example.com/api/random?orientation=portrait&tags=wallpaper"
 
 # Use Case 3: Cat pictures API (exclude NSFW content)
-curl "https://your-worker.workers.dev/api/random?tags=cat&exclude=nsfw,private"
+curl -L "https://app.example.com/api/random?tags=cat&exclude=nsfw,private"
 
 # Use Case 4: Nature landscapes (multiple tag combination)
-curl "https://your-worker.workers.dev/api/random?tags=nature,landscape&exclude=city"
+curl -L "https://app.example.com/api/random?tags=nature,landscape&exclude=city"
 
 # Use Case 5: Direct use in HTML img tag
-# <img src="https://your-worker.workers.dev/api/random?orientation=auto" />
+# <img src="https://app.example.com/api/random?orientation=auto" />
 
 # Use Case 6: Auto orientation detection (based on User-Agent)
 # Mobile devices get portrait images, desktop devices get landscape images
-curl -A "Mozilla/5.0 (iPhone)" "https://your-worker.workers.dev/api/random?orientation=auto"
+curl -L -A "Mozilla/5.0 (iPhone)" "https://app.example.com/api/random?orientation=auto"
 ```
 
 ---
 
-### Get Image File
+### Image files (R2 public URL)
 
-Directly retrieve image files from R2 storage.
+There is **no** `GET /r2/{path}` on the Worker. Image bytes are read from `R2_PUBLIC_URL`.
 
-**Request**
+**Object keys**
 
-```
-GET /r2/{path}
-```
+| Variant | Key |
+|---------|-----|
+| Original | `original/{orientation}/{id}.{ext}` |
+| WebP | `{orientation}/webp/{id}.webp` |
+| AVIF | `{orientation}/avif/{id}.avif` |
 
-**Path Parameters**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | string | Object path in R2 |
-
-**Response**
-
-- **Success**: Returns image binary data
-  - `Cache-Control`: `public, max-age=31536000` (1 year cache)
-
-- **Failure**:
-```json
-{
-  "success": false,
-  "error": "Not found"
-}
-```
-
-**curl Example**
+GIF is stored original-only. JPEG/PNG larger than 20MB do not get stored WebP/AVIF objects; `urls.webp` / `urls.avif` may be `https://r2.example.com/cdn-cgi/image/...` transform URLs.
 
 ```bash
-curl "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg" -o image.jpg
+curl "https://r2.example.com/original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg" -o image.jpg
 ```
+
+`GET /api/random` sets `Location` to this kind of URL. Use `curl -L` when you want to follow the redirect and save the file.
 
 ---
 
@@ -201,9 +191,9 @@ Authorization: Bearer <api-key>
       "width": 1920,
       "height": 1080,
       "paths": {
-        "original": "images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-        "webp": "images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-        "avif": "images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+        "original": "original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+        "webp": "landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+        "avif": "landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
       },
       "sizes": {
         "original": 245632,
@@ -211,9 +201,9 @@ Authorization: Bearer <api-key>
         "avif": 134567
       },
       "urls": {
-        "original": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-        "webp": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-        "avif": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+        "original": "https://r2.example.com/original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+        "webp": "https://r2.example.com/landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+        "avif": "https://r2.example.com/landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
       }
     }
   ],
@@ -229,11 +219,11 @@ Authorization: Bearer <api-key>
 ```bash
 # Get first page
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images?page=1&limit=12"
+  "https://app.example.com/api/images?page=1&limit=12"
 
 # Filter by tag
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images?tag=nature&orientation=landscape"
+  "https://app.example.com/api/images?tag=nature&orientation=landscape"
 ```
 
 ---
@@ -270,9 +260,9 @@ GET /api/images/{id}
     "width": 1920,
     "height": 1080,
     "paths": {
-      "original": "images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-      "webp": "images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-      "avif": "images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+      "original": "original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+      "webp": "landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+      "avif": "landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
     },
     "sizes": {
       "original": 245632,
@@ -280,9 +270,9 @@ GET /api/images/{id}
       "avif": 134567
     },
     "urls": {
-      "original": "https://your-worker.workers.dev/r2/images/...",
-      "webp": "https://your-worker.workers.dev/r2/images/...",
-      "avif": "https://your-worker.workers.dev/r2/images/..."
+      "original": "https://r2.example.com/original/landscape/...",
+      "webp": "https://r2.example.com/landscape/webp/...",
+      "avif": "https://r2.example.com/landscape/avif/..."
     }
   }
 }
@@ -308,7 +298,7 @@ GET /api/images/{id}
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images/550e8400-e29b-41d4-a716-446655440000"
+  "https://app.example.com/api/images/550e8400-e29b-41d4-a716-446655440000"
 ```
 
 ---
@@ -361,7 +351,7 @@ curl -X PUT \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"tags": ["nature", "outdoor"], "expiryMinutes": 1440}' \
-  "https://your-worker.workers.dev/api/images/550e8400-e29b-41d4-a716-446655440000"
+  "https://app.example.com/api/images/550e8400-e29b-41d4-a716-446655440000"
 ```
 
 ---
@@ -403,7 +393,7 @@ Delete operation will:
 ```bash
 curl -X DELETE \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/images/550e8400-e29b-41d4-a716-446655440000"
+  "https://app.example.com/api/images/550e8400-e29b-41d4-a716-446655440000"
 ```
 
 ---
@@ -451,9 +441,9 @@ Content-Type: multipart/form-data
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "status": "success",
     "urls": {
-      "original": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
-      "webp": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.webp",
-      "avif": "https://your-worker.workers.dev/r2/images/landscape/550e8400-e29b-41d4-a716-446655440000.avif"
+      "original": "https://r2.example.com/original/landscape/550e8400-e29b-41d4-a716-446655440000.jpg",
+      "webp": "https://r2.example.com/landscape/webp/550e8400-e29b-41d4-a716-446655440000.webp",
+      "avif": "https://r2.example.com/landscape/avif/550e8400-e29b-41d4-a716-446655440000.avif"
     },
     "orientation": "landscape",
     "tags": ["nature", "outdoor"],
@@ -467,11 +457,13 @@ Content-Type: multipart/form-data
 }
 ```
 
-**Auto Features**
+**Automatic processing**
 
-- Auto-detect image orientation (landscape/portrait)
-- Auto-generate WebP and AVIF format versions
-- Auto-calculate expiry time
+- Detect orientation (`landscape` / `portrait`)
+- JPEG/PNG ≤ 20MB: store WebP and AVIF objects
+- Larger JPEG/PNG: store original only; variant URLs use `/cdn-cgi/image`
+- GIF / already WebP or AVIF: original only
+- Compute expiry from `expiryMinutes`
 
 **curl Example**
 
@@ -481,7 +473,7 @@ curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -F "image=@photo.jpg" \
   -F "tags=nature,outdoor" \
-  "https://your-worker.workers.dev/api/upload/single"
+  "https://app.example.com/api/upload/single"
 ```
 
 ---
@@ -516,7 +508,7 @@ GET /api/tags
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/tags"
+  "https://app.example.com/api/tags"
 ```
 
 ---
@@ -570,7 +562,7 @@ curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "mountain"}' \
-  "https://your-worker.workers.dev/api/tags"
+  "https://app.example.com/api/tags"
 ```
 
 ---
@@ -627,7 +619,7 @@ curl -X PUT \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"newName": "mountains"}' \
-  "https://your-worker.workers.dev/api/tags/mountain"
+  "https://app.example.com/api/tags/mountain"
 ```
 
 ---
@@ -663,7 +655,7 @@ DELETE /api/tags/{name}
 ```bash
 curl -X DELETE \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/tags/mountain"
+  "https://app.example.com/api/tags/mountain"
 ```
 
 ---
@@ -717,7 +709,7 @@ curl -X POST \
     "addTags": ["landscape"],
     "removeTags": ["draft"]
   }' \
-  "https://your-worker.workers.dev/api/tags/batch"
+  "https://app.example.com/api/tags/batch"
 ```
 
 ---
@@ -754,7 +746,7 @@ Authorization: Bearer <api-key>
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/validate-api-key"
+  "https://app.example.com/api/validate-api-key"
 ```
 
 ---
@@ -794,7 +786,7 @@ GET /api/config
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/config"
+  "https://app.example.com/api/config"
 ```
 
 ---
@@ -830,7 +822,7 @@ Cleanup operation will:
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://your-worker.workers.dev/api/cleanup"
+  "https://app.example.com/api/cleanup"
 ```
 
 ---
@@ -927,9 +919,11 @@ interface ApiResponse<T = unknown> {
 | Code | Meaning |
 |------|---------|
 | 200 | Success |
+| 302 | `/api/random` redirect to an image URL |
 | 400 | Bad Request |
 | 401 | Unauthorized (missing or invalid API Key) |
 | 404 | Resource Not Found |
+| 413 | File too large or batch operation over limit |
 | 500 | Internal Server Error |
 
 ### Error Response Format
@@ -948,19 +942,19 @@ All error responses follow a unified format:
 | Error Message | Description |
 |---------------|-------------|
 | `Unauthorized` | API Key invalid or missing |
-| `Invalid image ID` | Image ID format incorrect (not UUID) |
-| `Image not found` | Image does not exist |
+| `无效的图片ID` | Image ID is not a UUID |
+| `图片不存在` | Image does not exist |
 | `No images found matching criteria` | No images match the criteria |
-| `File exceeds maximum size of 10MB` | File exceeds size limit |
-| `Too many files. Maximum is 20` | Upload file count exceeds limit |
-| `Tag name is required` | Tag name is empty |
-| `New name must be different from old name` | New tag name same as old |
+| `File too large. Maximum size is 70MB` | Single file exceeds 70MB |
+| `No file provided` | Missing `image` or `file` field |
+| `标签名称不能为空` | Tag name is empty |
+| `新名称不能与旧名称相同` | New tag name is the same as the old name |
 
 ---
 
 ## CORS Configuration
 
-All API endpoints have CORS enabled:
+The UI is same-origin with the API, so the browser does not need CORS. `/api/*` still sends CORS headers for external scripts:
 
 ```
 Access-Control-Allow-Origin: *
@@ -978,7 +972,7 @@ Access-Control-Max-Age: 86400
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/api/random` | GET | No | Get random image |
-| `/r2/*` | GET | No | Get image file |
+| `R2_PUBLIC_URL` object | GET | No | Image bytes (not through the Worker) |
 | `/api/images` | GET | Yes | List images |
 | `/api/images/:id` | GET | Yes | Get image details |
 | `/api/images/:id` | PUT | Yes | Update image metadata |
@@ -996,7 +990,8 @@ Access-Control-Max-Age: 86400
 ### Frontend Request Examples (JavaScript)
 
 ```javascript
-const API_URL = 'https://your-worker.workers.dev';
+// Same-origin UI can use relative paths. External scripts set API_URL to the Worker hostname.
+const API_URL = '';
 const API_KEY = 'your-api-key';
 
 // Get image list
