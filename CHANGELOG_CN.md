@@ -6,6 +6,14 @@
 
 ## [未发布]
 
+### 变更
+
+- 图库缩略图从原图做 `/cdn-cgi/image`，宽度仅 400/800/1200、quality 75，并带 `srcset`；不再二次压 stored WebP，卡片热路径去掉 Motion。
+- 详情弹层显示最长边 1200 的预览图，不再只有复制链接。
+- 默认只预写 WebP；未勾选时 AVIF 为 `/cdn-cgi/image`（长边 ≤1200）。
+- 大于 20MB 的上传把 File 直接写入 R2，不再二次 `arrayBuffer()`。大文件并发为 2。
+- `GET /api/images` 直接读 D1，不再走 KV 列表缓存。format 筛选不再把 marker 路径当成已存储变体。
+
 ### 修复
 
 - GitHub Actions 和文档改为 `pnpm run deploy`。直接写 `pnpm deploy` 会走 pnpm 的 workspace 发布命令，报 `ERR_PNPM_CANNOT_DEPLOY`。

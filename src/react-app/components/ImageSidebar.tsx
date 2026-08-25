@@ -3,8 +3,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState, useMemo, useCallba
 import { motion, AnimatePresence } from 'motion/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import ImageModal from "../components/ImageModal";
-import { getFullUrl } from "../utils/baseUrl";
-import { discreteThumbnailWidth, toCdnCgiImageUrl } from "../utils/cdnImage";
+import { thumbnailSrc } from "../utils/cdnImage";
 import { ImageIcon, Cross1Icon, ExclamationTriangleIcon } from "./ui/icons";
 import { ImageData } from "../types/image";
 
@@ -129,11 +128,8 @@ const ImageSidebar = React.memo(function ImageSidebar({
         onOpen(result);
       };
 
-      const imageSrc = (() => {
-        const base = getFullUrl(result.urls?.webp || result.urls?.original || '');
-        if (!base) return '';
-        return toCdnCgiImageUrl(base, { width: discreteThumbnailWidth(thumbWidth), quality: 70, format: 'auto', fit: 'scale-down' });
-      })();
+      const isGif = (result.format || '').toLowerCase() === 'gif';
+      const imageSrc = thumbnailSrc(result.urls?.original || '', thumbWidth, isGif);
 
       return (
         <div
@@ -147,12 +143,15 @@ const ImageSidebar = React.memo(function ImageSidebar({
           {canOpen ? (
             <>
               <div className="absolute inset-0 bg-slate-50 dark:bg-slate-900">
-                {imageSrc && (
+                {imageSrc.src && (
                   <img
-                    src={imageSrc}
+                    src={imageSrc.src}
+                    srcSet={imageSrc.srcSet || undefined}
+                    sizes={imageSrc.sizes || undefined}
                     alt={result.originalName || ''}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
+                    decoding="async"
                   />
                 )}
               </div>

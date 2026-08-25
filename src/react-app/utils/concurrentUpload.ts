@@ -28,7 +28,7 @@ export interface ConcurrentUploadOptions {
 export async function concurrentUpload(options: ConcurrentUploadOptions): Promise<UploadResult[]> {
   const {
     files,
-    concurrency = 5,
+    concurrency,
     tags,
     expiryMinutes,
     quality,
@@ -38,6 +38,10 @@ export async function concurrentUpload(options: ConcurrentUploadOptions): Promis
     onFileStatusChange,
     signal,
   } = options
+
+  const LARGE_FILE_BYTES = 10 * 1024 * 1024
+  const hasLargeFile = files.some((item) => item.file.size > LARGE_FILE_BYTES)
+  const parallel = concurrency ?? (hasLargeFile ? 2 : 5)
 
   const results: UploadResult[] = []
   const queue = [...files]
@@ -53,7 +57,6 @@ export async function concurrentUpload(options: ConcurrentUploadOptions): Promis
     onFileStatusChange(item.id, 'uploading')
 
     try {
-      // Build FormData for single file
       const formData = new FormData()
       formData.append('image', item.file)
       formData.append('tags', tags.join(','))
@@ -64,9 +67,6 @@ export async function concurrentUpload(options: ConcurrentUploadOptions): Promis
       formData.append('preserveAnimation', preserveAnimation.toString())
       formData.append('generateWebp', (outputFormat === 'webp' || outputFormat === 'both').toString())
       formData.append('generateAvif', (outputFormat === 'avif' || outputFormat === 'both').toString())
-
-      // Update to processing (after upload starts, before compression completes)
-      onFileStatusChange(item.id, 'processing')
 
       const response = await request<SingleUploadResponse>('/api/upload/single', {
         method: 'POST',
@@ -120,7 +120,7 @@ export async function concurrentUpload(options: ConcurrentUploadOptions): Promis
     }
 
     // Fill up to concurrency limit
-    while (active.length < concurrency && queue.length > 0) {
+    while (active.length < parallel && queue.length > 0) {
       const item = queue.shift()!
       const promise = uploadOne(item).finally(() => {
         const index = active.indexOf(promise)

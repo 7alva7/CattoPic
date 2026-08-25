@@ -57,7 +57,7 @@ function VirtualImageMasonryInner({
 }: VirtualImageMasonryInnerProps) {
   const lastFetchTriggerIndexRef = useRef(-1);
 
-  const overscan = Math.max(12, lanes * 6);
+  const overscan = Math.max(8, lanes * 2);
 
   const getItemKey = useCallback((index: number) => images[index]?.id ?? index, [images]);
 

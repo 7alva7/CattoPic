@@ -1,20 +1,23 @@
-import { StrictMode } from 'react';
+import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { QueryProvider } from './providers/QueryProvider';
 import Home from './page';
-import Manage from './manage/page';
 import './globals.css';
+
+const Manage = lazy(() => import('./manage/page'));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryProvider>
       <BrowserRouter>
         <div className="relative z-10">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/manage" element={<Manage />} />
-          </Routes>
+          <Suspense fallback={<div className="min-h-[40vh]" />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/manage" element={<Manage />} />
+            </Routes>
+          </Suspense>
         </div>
         <div className="max-w-7xl mx-auto px-6 mt-8 text-center text-gray-600 dark:text-gray-400">
           Create By{' '}

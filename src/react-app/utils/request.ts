@@ -83,15 +83,4 @@ export const api = {
     }),
 
   delete: <T>(endpoint: string) => request<T>(endpoint, { method: "DELETE" }),
-
-  upload: <T>(endpoint: string, files: File[]) => {
-    const formData = new FormData();
-    for (const file of files) {
-      formData.append("images[]", file);
-    }
-    return request<T>(endpoint, {
-      method: "POST",
-      body: formData,
-    });
-  },
 };

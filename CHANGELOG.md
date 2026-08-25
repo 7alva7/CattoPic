@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Gallery thumbnails transform the original object at widths 400/800/1200 and quality 75 (`srcset`); cards no longer wrap stored WebP or use Motion on the hot path.
+- Image detail dialog shows a 1200px preview instead of copy-links only.
+- Default upload output is WebP only; AVIF is a `/cdn-cgi/image` URL unless the compression panel requests a stored AVIF object.
+- Uploads larger than 20MB put the File to R2 without a second full `arrayBuffer()`. Large-file upload concurrency is 2.
+- `GET /api/images` reads D1 directly (no KV list get/set). Marker paths are not counted as stored WebP/AVIF in format filters.
+
 ### Fixed
 
 - GitHub Actions and docs call `pnpm run deploy`. Bare `pnpm deploy` is pnpm's workspace publish command and fails with `ERR_PNPM_CANNOT_DEPLOY`.

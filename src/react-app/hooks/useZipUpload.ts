@@ -1,10 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
-import {
-  ZipAnalysisResult,
-  ExtractionProgress,
-  analyzeZipFile,
-  extractImagesBatch,
-} from '../utils/zipProcessor'
+import type { ZipAnalysisResult, ExtractionProgress } from '../utils/zipProcessor'
+import type JSZip from 'jszip'
 import { concurrentUpload } from '../utils/concurrentUpload'
 import { UploadResult } from '../types'
 import { FileUploadStatus } from '../types/upload'
@@ -68,6 +64,7 @@ export function useZipUpload(): ZipUploadState & ZipUploadActions {
   const [state, setState] = useState<ZipUploadState>(initialState)
   const abortControllerRef = useRef<AbortController | null>(null)
   const isCancelledRef = useRef(false)
+  const zipRef = useRef<JSZip | null>(null)
 
   // 选择ZIP文件并分析
   const selectZipFile = useCallback(async (file: File) => {
@@ -89,7 +86,10 @@ export function useZipUpload(): ZipUploadState & ZipUploadActions {
 
     try {
       setState((prev) => ({ ...prev, phase: 'analyzing' }))
-      const analysis = await analyzeZipFile(file)
+      const { loadZipArchive, analyzeZipArchive } = await import('../utils/zipProcessor')
+      const zip = await loadZipArchive(file)
+      zipRef.current = zip
+      const analysis = analyzeZipArchive(zip)
 
       if (analysis.totalImages === 0) {
         setState((prev) => ({
@@ -147,12 +147,13 @@ export function useZipUpload(): ZipUploadState & ZipUploadActions {
         let completedCount = 0
         let failedCount = 0
 
-        // 分批解压和上传
-        const batchSize = 50
+        const { extractImagesBatch, loadZipArchive } = await import('../utils/zipProcessor')
+        const zip = zipRef.current ?? await loadZipArchive(zipFile)
+        zipRef.current = zip
         const extractor = extractImagesBatch(
-          zipFile,
+          zip,
           analysis.images,
-          batchSize,
+          5,
           (progress) => {
             setState((prev) => ({ ...prev, extractProgress: progress }))
           }
@@ -170,7 +171,6 @@ export function useZipUpload(): ZipUploadState & ZipUploadActions {
           // 并发上传当前批次
           const results = await concurrentUpload({
             files: batch.map((img) => ({ id: img.id, file: img.file })),
-            concurrency: 5,
             tags: options.tags,
             expiryMinutes: options.expiryMinutes,
             quality: options.quality,
@@ -231,6 +231,7 @@ export function useZipUpload(): ZipUploadState & ZipUploadActions {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
+    zipRef.current = null
     setState((prev) => ({
       ...prev,
       phase: 'idle',
@@ -238,12 +239,12 @@ export function useZipUpload(): ZipUploadState & ZipUploadActions {
     }))
   }, [])
 
-  // 重置状态
   const reset = useCallback(() => {
     isCancelledRef.current = true
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
+    zipRef.current = null
     setState(initialState)
   }, [])
 

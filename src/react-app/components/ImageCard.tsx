@@ -1,8 +1,7 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
-import { motion } from 'motion/react';
+import React, { useState, useCallback, useRef, useMemo, useLayoutEffect } from "react";
 import { ImageFile } from "../types";
 import { getFullUrl } from "../utils/baseUrl";
-import { discreteThumbnailWidth, toCdnCgiImageUrl } from "../utils/cdnImage";
+import { thumbnailSrc } from "../utils/cdnImage";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { getFormatLabel, getOrientationLabel } from "../utils/imageUtils";
 import ContextMenu, { ContextMenuGroup } from "./ContextMenu";
@@ -56,7 +55,7 @@ const ImageCard = React.memo(function ImageCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // 右键菜单状态
   const [contextMenu, setContextMenu] = useState({
@@ -74,14 +73,19 @@ const ImageCard = React.memo(function ImageCard({
     return getFallbackAspectRatio(image.orientation);
   }, [image.width, image.height, image.orientation]);
 
-  const imageSrc = useMemo(() => {
-    const base = getFullUrl(image.urls?.webp || image.urls?.original || '');
-    if (!base || isGif) return base;
+  const thumb = useMemo(
+    () => thumbnailSrc(image.urls?.original || '', displayWidth, isGif),
+    [displayWidth, image.urls?.original, isGif]
+  );
 
-    // Request a resized thumbnail for smoother scrolling (less decode + bandwidth).
-    // Use 2x to keep it crisp on high-DPI displays.
-    return toCdnCgiImageUrl(base, { width: discreteThumbnailWidth(displayWidth), quality: 75, format: 'auto', fit: 'scale-down' });
-  }, [displayWidth, image.urls, isGif]);
+  useLayoutEffect(() => {
+    const el = imgRef.current;
+    if (el?.complete && el.naturalWidth > 0) {
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+  }, [thumb.src]);
 
   const handleOpen = useCallback(() => {
     onClick(image);
@@ -245,11 +249,8 @@ const ImageCard = React.memo(function ImageCard({
 
   return (
     <>
-      <motion.div
-        ref={cardRef}
-        initial={false}
-        whileHover={{ y: -8, transition: { duration: 0.2 } }}
-        className="rounded-2xl overflow-hidden group cursor-pointer bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-gray-700 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.08),0_4px_24px_-8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_32px_-8px_rgba(99,102,241,0.25),0_4px_16px_-4px_rgba(0,0,0,0.1)] hover:border-indigo-300/70 dark:hover:border-indigo-500/70 dark:shadow-[0_2px_12px_-3px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_32px_-8px_rgba(99,102,241,0.35)] transition-all duration-300 h-full ring-1 ring-black/[0.03] dark:ring-white/[0.05]"
+      <div
+        className="rounded-2xl overflow-hidden group cursor-pointer bg-white dark:bg-slate-800 border border-gray-200/80 dark:border-gray-700 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.08),0_4px_24px_-8px_rgba(0,0,0,0.05)] hover:-translate-y-2 hover:shadow-[0_8px_32px_-8px_rgba(99,102,241,0.25),0_4px_16px_-4px_rgba(0,0,0,0.1)] hover:border-indigo-300/70 dark:hover:border-indigo-500/70 dark:shadow-[0_2px_12px_-3px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_32px_-8px_rgba(99,102,241,0.35)] transition-transform duration-200 h-full ring-1 ring-black/[0.03] dark:ring-white/[0.05]"
         onClick={handleOpen}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -260,13 +261,17 @@ const ImageCard = React.memo(function ImageCard({
           style={{ aspectRatio }}
         >
           <img
-            src={imageSrc}
+            ref={imgRef}
+            src={thumb.src}
+            srcSet={thumb.srcSet || undefined}
+            sizes={thumb.sizes || undefined}
             alt={image.originalName}
             loading="lazy"
+            decoding="async"
             onLoad={handleImageLoad}
-            className={`w-full h-full object-cover transition-all duration-500 ${
+            className={`w-full h-full object-cover ${
               isLoading ? "opacity-0" : "opacity-100 group-hover:scale-105"
-            }`}
+            } ${isLoading ? "" : "transition-transform duration-300"}`}
           />
 
           {isLoading && <LoadingSpinner />}
@@ -290,11 +295,11 @@ const ImageCard = React.memo(function ImageCard({
               </span>
             </div>
 
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: isHovered ? 1 : 0 }}
+            <button
               onClick={handleQuickCopy}
-              className="p-1.5 rounded-full bg-white/20 backdrop-blur-xs hover:bg-white/40 transition-colors"
+              className={`p-1.5 rounded-full bg-white/20 backdrop-blur-xs hover:bg-white/40 transition-opacity ${
+                isHovered ? "opacity-100" : "opacity-0"
+              }`}
               title="复制URL"
             >
               {copyStatus === "idle" && (
@@ -306,10 +311,10 @@ const ImageCard = React.memo(function ImageCard({
               {copyStatus === "error" && (
                 <Cross1Icon className="h-4 w-4 text-red-400" />
               )}
-            </motion.button>
+            </button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* 右键菜单 */}
       <ContextMenu

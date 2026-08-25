@@ -329,15 +329,18 @@ export class MetadataService {
           params.push('gif');
           break;
         case 'webp':
-          whereConditions.push('(i.format = ? OR i.path_webp IS NOT NULL)');
+          whereConditions.push('(i.format = ? OR (i.path_webp IS NOT NULL AND i.path_webp != i.path_original))');
           params.push('webp');
           break;
         case 'avif':
-          whereConditions.push('(i.format = ? OR i.path_avif IS NOT NULL)');
+          whereConditions.push('(i.format = ? OR (i.path_avif IS NOT NULL AND i.path_avif != i.path_original))');
           params.push('avif');
           break;
         case 'original':
-          whereConditions.push('i.path_webp IS NULL AND i.path_avif IS NULL');
+          whereConditions.push(`
+            (i.path_webp IS NULL OR i.path_webp = i.path_original)
+            AND (i.path_avif IS NULL OR i.path_avif = i.path_original)
+          `);
           break;
       }
     }
@@ -346,18 +349,18 @@ export class MetadataService {
       ? 'WHERE ' + whereConditions.join(' AND ')
       : '';
 
-    // Get total count
-    const countResult = await this.db.prepare(
-      `SELECT COUNT(DISTINCT i.id) as count ${baseQuery} ${whereClause}`
-    ).bind(...params).first<{ count: number }>();
+    const [countBatch, imagesBatch] = await this.db.batch([
+      this.db.prepare(
+        `SELECT COUNT(DISTINCT i.id) as count ${baseQuery} ${whereClause}`
+      ).bind(...params),
+      this.db.prepare(`
+        SELECT DISTINCT i.* ${baseQuery} ${whereClause}
+        ORDER BY i.upload_time DESC LIMIT ? OFFSET ?
+      `).bind(...params, limit, offset),
+    ]);
 
-    const total = countResult?.count || 0;
-
-    // Get paginated data
-    const imagesResult = await this.db.prepare(`
-      SELECT DISTINCT i.* ${baseQuery} ${whereClause}
-      ORDER BY i.upload_time DESC LIMIT ? OFFSET ?
-    `).bind(...params, limit, offset).all<ImageRow>();
+    const total = (countBatch as D1Result<{ count: number }>).results?.[0]?.count || 0;
+    const imagesResult = imagesBatch as D1Result<ImageRow>;
 
     const images = await this.enrichWithTags(imagesResult.results || []);
 

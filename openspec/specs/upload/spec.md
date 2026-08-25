@@ -35,6 +35,24 @@ jpeg, jpg, png, gif, webp, and avif MUST be accepted. Other formats MUST be reje
 - **WHEN** a non-image file is uploaded
 - **THEN** the response is a JSON error
 
+### Requirement: Default stored variant is WebP
+
+JPEG and PNG files at or under 20MB MUST store a WebP object when `generateWebp` is not false. AVIF objects MUST be stored only when `generateAvif` is true. Otherwise `paths.avif` MAY equal the original path so `urls.avif` is a `/cdn-cgi/image` URL with AVIF long side at most 1200px.
+
+#### Scenario: Default JPEG upload
+
+- **WHEN** a JPEG under 20MB is posted without `generateAvif=true`
+- **THEN** a WebP object is stored and `urls.avif` is a transform URL or omitted stored avif object
+
+### Requirement: Large files are not Images-binding compressed
+
+Files larger than 20MB MUST be stored as the original object without `IMAGES.input()`. Variant URLs MUST use `/cdn-cgi/image` markers. The handler MUST NOT call `arrayBuffer()` on the full file body for those uploads.
+
+#### Scenario: 40MB JPEG
+
+- **WHEN** a 40MB JPEG is uploaded
+- **THEN** the original is stored on R2 and WebP/AVIF URLs are transform URLs
+
 ### Requirement: GIF is original-only
 
 GIF uploads MUST store only the original object. WebP and AVIF URLs for GIFs MUST be empty.

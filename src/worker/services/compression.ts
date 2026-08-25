@@ -13,7 +13,7 @@ const DEFAULT_OPTIONS: Required<CompressionOptions> = {
   maxHeight: 0,
   preserveAnimation: true,
   generateWebp: true,
-  generateAvif: true,
+  generateAvif: false,
 };
 
 export class CompressionService {
@@ -74,7 +74,8 @@ export class CompressionService {
   async compress(
     data: ArrayBuffer,
     format: string,
-    options: CompressionOptions = {}
+    options: CompressionOptions = {},
+    knownDimensions?: { width: number; height: number }
   ): Promise<CompressionResult> {
     const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -88,8 +89,9 @@ export class CompressionService {
 
     const result: CompressionResult = { original: data, isAnimated: false };
 
-    // Get original dimensions
-    const { width, height } = await ImageProcessor.getImageDimensions(data);
+    const { width, height } = knownDimensions && knownDimensions.width > 0 && knownDimensions.height > 0
+      ? knownDimensions
+      : await ImageProcessor.getImageDimensions(data);
 
     const hasResizeLimit = opts.maxWidth > 0 && opts.maxHeight > 0;
     const targetDims = hasResizeLimit

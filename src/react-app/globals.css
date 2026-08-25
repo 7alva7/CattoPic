@@ -105,25 +105,6 @@
       sans-serif;
     font-weight: 700;
   }
-  /* Masonry Grid Styles */
-  .my-masonry-grid {
-    display: flex;
-    margin-left: -16px;
-    /* gutter size offset */
-    width: auto;
-    margin-bottom: 16px;
-  }
-
-  .my-masonry-grid_column {
-    padding-left: 16px;
-    /* gutter size */
-    background-clip: padding-box;
-  }
-
-  .my-masonry-grid_column > div {
-    margin-bottom: 16px;
-  }
-
   /* 亮色主题变量 */
   :root {
     --light-bg-start: 240, 242, 245;
@@ -447,21 +428,6 @@ body.theme-transition {
 
 .preview-item:hover .remove-preview {
     opacity: 1;
-}
-
-/* 图片容器样式 */
-.aspect-square {
-    position: relative;
-    padding-bottom: 100%;
-}
-
-.aspect-square img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 /* 暗黑模式适配 */

@@ -11,7 +11,7 @@ import PreviewSidebar from './components/upload/PreviewSidebar'
 import CompressionSettings from './components/upload/CompressionSettings'
 import { motion } from 'motion/react'
 import { ImageIcon, PlusCircledIcon } from './components/ui/icons'
-import { useDeleteImage, useInvalidateImages } from './hooks/useImages'
+import { useDeleteImage } from './hooks/useImages'
 import { useUploadState } from './hooks/useUploadState'
 import { useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { queryKeys } from './lib/queryKeys'
@@ -31,7 +31,6 @@ export default function Home() {
   const [expiryMinutes, setExpiryMinutes] = useState<number>(0)
 
   // TanStack Query cache invalidation hook
-  const invalidateImages = useInvalidateImages()
   const queryClient = useQueryClient()
   const deleteImageMutation = useDeleteImage()
 
@@ -46,7 +45,7 @@ export default function Home() {
   const [compressionQuality, setCompressionQuality] = useState(90)
   const [compressionMaxWidth, setCompressionMaxWidth] = useState(0)
   const [preserveAnimation, setPreserveAnimation] = useState(true)
-  const [outputFormat, setOutputFormat] = useState<'webp' | 'avif' | 'both'>('both')
+  const [outputFormat, setOutputFormat] = useState<'webp' | 'avif' | 'both'>('webp')
 
   const primeImagesListCache = useCallback((results: UploadResult[]) => {
     const uploadedImages: ImageFile[] = results
@@ -59,8 +58,8 @@ export default function Home() {
         orientation: r.orientation!,
         tags: r.tags || [],
         format: r.format || '',
-        width: 0,
-        height: 0,
+        width: r.width || 0,
+        height: r.height || 0,
         paths: { original: '', webp: '', avif: '' },
         sizes: {
           original: r.sizes?.original || 0,
@@ -289,7 +288,6 @@ export default function Home() {
       // 使用并发上传（5个同时）
       const results = await concurrentUpload({
         files: fileDetails,
-        concurrency: 5,
         tags: selectedTags,
         expiryMinutes,
         quality: compressionQuality,
@@ -332,7 +330,6 @@ export default function Home() {
 
       // Invalidate image list cache
       primeImagesListCache(resultsWithIds)
-      invalidateImages()
 
       // 重置文件详情
       setFileDetails([])
@@ -475,7 +472,6 @@ export default function Home() {
         onZipUploadComplete={(results) => {
           // ZIP上传完成后刷新图片缓存
           primeImagesListCache(results)
-          invalidateImages()
           setStatus({
             type: 'success',
             message: 'ZIP批量上传完成'

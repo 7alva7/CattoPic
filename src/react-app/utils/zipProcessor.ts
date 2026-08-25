@@ -65,9 +65,13 @@ function generateId(): string {
 /**
  * 分析ZIP文件内容，返回图片列表和统计信息
  */
-export async function analyzeZipFile(zipFile: File): Promise<ZipAnalysisResult> {
-  const zip = await JSZip.loadAsync(zipFile)
+const MAX_IMAGE_BYTES = 70 * 1024 * 1024
 
+export async function loadZipArchive(zipFile: File): Promise<JSZip> {
+  return JSZip.loadAsync(zipFile)
+}
+
+export function analyzeZipArchive(zip: JSZip): ZipAnalysisResult {
   const images: ZipImageEntry[] = []
   const skippedFiles: ZipAnalysisResult['skippedFiles'] = []
 
@@ -96,10 +100,15 @@ export async function analyzeZipFile(zipFile: File): Promise<ZipAnalysisResult> 
 
   return {
     totalImages: images.length,
-    totalSize: 0, // 无法在分析阶段获取准确大小
+    totalSize: 0,
     images,
     skippedFiles,
   }
+}
+
+export async function analyzeZipFile(zipFile: File): Promise<ZipAnalysisResult> {
+  const zip = await loadZipArchive(zipFile)
+  return analyzeZipArchive(zip)
 }
 
 /**
@@ -107,13 +116,11 @@ export async function analyzeZipFile(zipFile: File): Promise<ZipAnalysisResult> 
  * 每批返回指定数量的图片，避免内存溢出
  */
 export async function* extractImagesBatch(
-  zipFile: File,
+  zip: JSZip,
   imageEntries: ZipImageEntry[],
-  batchSize: number = 50,
+  batchSize: number = 5,
   onProgress?: (progress: ExtractionProgress) => void
 ): AsyncGenerator<ExtractedImage[]> {
-  const zip = await JSZip.loadAsync(zipFile)
-
   for (let i = 0; i < imageEntries.length; i += batchSize) {
     const batch = imageEntries.slice(i, i + batchSize)
     const extractedBatch: ExtractedImage[] = []
@@ -123,7 +130,6 @@ export async function* extractImagesBatch(
       if (!zipEntry) continue
 
       try {
-        // 通知进度
         if (onProgress) {
           onProgress({
             current: i + extractedBatch.length + 1,
@@ -132,10 +138,11 @@ export async function* extractImagesBatch(
           })
         }
 
-        // 提取文件内容
         const blob = await zipEntry.async('blob')
+        if (blob.size > MAX_IMAGE_BYTES) {
+          continue
+        }
 
-        // 创建File对象
         const file = new File([blob], entry.name, {
           type: getMimeType(entry.name),
         })
@@ -147,7 +154,6 @@ export async function* extractImagesBatch(
         })
       } catch (error) {
         console.error(`Failed to extract ${entry.path}:`, error)
-        // 继续处理其他文件
       }
     }
 

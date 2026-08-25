@@ -29,28 +29,11 @@ export async function imagesHandler(c: Context<{ Bindings: Env }>): Promise<Resp
     const orientation = validateOrientation(url.searchParams.get('orientation'));
     const format = validateImageListFormat(url.searchParams.get('format')) || 'all';
 
-    const cache = new CacheService(c.env.CACHE_KV);
-    const cacheKey = CacheKeys.imagesList(page, limit, tag, orientation, format);
-
-    // Try to get from cache - cache stores the response data object, not the Response
-    interface ImagesListCache {
-      images: Array<Record<string, unknown>>;
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    }
-    const cached = await cache.get<ImagesListCache>(cacheKey);
-    if (cached && !cached.images.some((image) => isExpired(image.expiryTime))) {
-      return successResponse(cached);
-    }
-
     const metadata = new MetadataService(c.env.DB);
     const { images, total } = await metadata.getImages({ page, limit, tag, orientation, format });
 
     const baseUrl = c.env.R2_PUBLIC_URL;
 
-    // Add full URLs to images
     const imagesWithUrls = images.map(img => ({
       ...img,
       urls: {
@@ -72,9 +55,6 @@ export async function imagesHandler(c: Context<{ Bindings: Env }>): Promise<Resp
       total,
       totalPages: Math.ceil(total / limit)
     };
-
-    // Store in cache
-    await cache.set(cacheKey, responseData, CACHE_TTL.IMAGES_LIST);
 
     return successResponse(responseData);
 

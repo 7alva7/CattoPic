@@ -5,7 +5,7 @@ Authenticated image list, detail, metadata update, and delete.
 ## Requirements
 ### Requirement: Paginated image list
 
-`GET /api/images` MUST be protected. It MUST return `{ success: true, images, page, limit, total, totalPages }`. `page` defaults to 1. `limit` defaults to 12 and MUST be clamped to 1..100. Optional `tag`, `orientation` (`landscape`|`portrait`), and `format` (`all`|`gif`|`webp`|`avif`|`original`) MUST filter the list. Expired images MUST NOT appear.
+`GET /api/images` MUST be protected. It MUST return `{ success: true, images, page, limit, total, totalPages }`. `page` defaults to 1. `limit` defaults to 12 and MUST be clamped to 1..100. Optional `tag`, `orientation` (`landscape`|`portrait`), and `format` (`all`|`gif`|`webp`|`avif`|`original`) MUST filter the list. Expired images MUST NOT appear. List responses MUST be read from D1 (not a KV list cache). `format=webp` and `format=avif` MUST NOT treat a marker path equal to the original key as a stored variant.
 
 #### Scenario: First page
 

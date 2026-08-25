@@ -24,11 +24,45 @@ function buildOptionsString(options: CdnCgiImageOptions): string {
   return parts.join(',');
 }
 
-export function discreteThumbnailWidth(cssPx: number): 400 | 800 | 1200 {
+export const THUMB_QUALITY = 75;
+export const THUMB_WIDTHS = [400, 800, 1200] as const;
+export type ThumbWidth = (typeof THUMB_WIDTHS)[number];
+
+export function discreteThumbnailWidth(cssPx: number): ThumbWidth {
   const requested = Math.max(1, Math.ceil(cssPx * 2));
   if (requested <= 400) return 400;
   if (requested <= 800) return 800;
   return 1200;
+}
+
+export function thumbnailOptions(width: ThumbWidth): CdnCgiImageOptions {
+  return { width, quality: THUMB_QUALITY, format: 'auto', fit: 'scale-down' };
+}
+
+/** Gallery thumbs always transform the original object (not a stored WebP). */
+export function thumbnailSrc(originalUrl: string, cssPx: number, isGif: boolean): {
+  src: string;
+  srcSet: string;
+  sizes: string;
+} {
+  const base = getFullUrl(originalUrl);
+  if (!base) return { src: '', srcSet: '', sizes: '' };
+  if (isGif) return { src: base, srcSet: '', sizes: '' };
+
+  const selected = discreteThumbnailWidth(cssPx);
+  const src = toCdnCgiImageUrl(base, thumbnailOptions(selected));
+  const srcSet = THUMB_WIDTHS
+    .map((width) => `${toCdnCgiImageUrl(base, thumbnailOptions(width))} ${width}w`)
+    .join(', ');
+  const sizes = `${Math.max(1, Math.round(cssPx))}px`;
+  return { src, srcSet, sizes };
+}
+
+export function previewSrc(originalUrl: string, isGif: boolean): string {
+  const base = getFullUrl(originalUrl);
+  if (!base) return '';
+  if (isGif) return base;
+  return toCdnCgiImageUrl(base, thumbnailOptions(1200));
 }
 
 export function toCdnCgiImageUrl(inputUrl: string, options: CdnCgiImageOptions): string {

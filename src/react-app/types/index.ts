@@ -104,6 +104,8 @@ export interface UploadResult {
     avif: number;
   };
   expiryTime?: string;
+  width?: number;
+  height?: number;
   error?: string;
 }
 

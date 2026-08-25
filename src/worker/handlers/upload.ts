@@ -60,11 +60,18 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
     const metadata = new MetadataService(c.env.DB);
     const compression = c.env.IMAGES ? new CompressionService(c.env.IMAGES) : null;
 
-    // Read file data
-    const arrayBuffer = await file.arrayBuffer();
+    const HEADER_BYTES = 2 * 1024 * 1024;
+    const canBindImages = file.size <= CLOUDFLARE_IMAGES_MAX_BYTES;
+    let compressBuffer: ArrayBuffer | null = null;
+    let imageInfo;
 
-    // Get image info
-    const imageInfo = await ImageProcessor.getImageInfo(arrayBuffer);
+    if (canBindImages) {
+      compressBuffer = await file.arrayBuffer();
+      imageInfo = await ImageProcessor.getImageInfo(compressBuffer);
+    } else {
+      const header = await file.slice(0, HEADER_BYTES).arrayBuffer();
+      imageInfo = await ImageProcessor.getImageInfo(header);
+    }
 
     if (!ImageProcessor.isSupportedFormat(imageInfo.format)) {
       return errorResponse(`Unsupported format: ${imageInfo.format}`);
@@ -82,11 +89,12 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
     const shouldSkipProcessing = isGif || isWebp || isAvif;
     let webpSize = 0;
     let avifSize = 0;
+    const wantsWebp = compressionOptions.generateWebp !== false;
+    const wantsAvif = compressionOptions.generateAvif === true;
 
-    // Always upload original (GIF only stores original)
-    const originalUploadPromise = storage.upload(paths.original, arrayBuffer, contentType);
+    // Put the File/Blob to R2; do not keep a second full copy of files >20MB.
+    const originalUploadPromise = storage.upload(paths.original, file, contentType);
 
-    // Advanced formats: do not recompress; treat upload as best format
     if (shouldSkipProcessing) {
       await originalUploadPromise;
 
@@ -98,12 +106,14 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
         paths.avif = paths.original;
         avifSize = file.size;
       }
-    } else if (compression && file.size <= CLOUDFLARE_IMAGES_MAX_BYTES) {
-      const compressionPromise = compression.compress(arrayBuffer, imageInfo.format, compressionOptions);
-      const wantsWebp = compressionOptions.generateWebp !== false;
-      const wantsAvif = compressionOptions.generateAvif !== false;
+    } else if (compression && compressBuffer) {
+      const compressionPromise = compression.compress(
+        compressBuffer,
+        imageInfo.format,
+        compressionOptions,
+        { width: imageInfo.width, height: imageInfo.height }
+      );
 
-      // Ensure original is uploaded while compression runs
       await originalUploadPromise;
 
       const compressionResult = await compressionPromise;
@@ -129,20 +139,16 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
         await Promise.all(uploadPromises);
       }
 
-      // If compression failed for some formats, fall back to Transform-URL via marker paths.
       if (wantsWebp && !paths.webp) {
         paths.webp = paths.original;
       }
-      if (wantsAvif && !paths.avif) {
+      if (!paths.avif) {
         paths.avif = paths.original;
       }
     } else {
-      // Skip compression (too large or no Images binding): store original + use Transform-URL via marker paths
       await originalUploadPromise;
-      const wantsWebp = compressionOptions.generateWebp !== false;
-      const wantsAvif = compressionOptions.generateAvif !== false;
       if (wantsWebp) paths.webp = paths.original;
-      if (wantsAvif) paths.avif = paths.original;
+      paths.avif = paths.original;
     }
 
     // Calculate expiry time
@@ -193,6 +199,8 @@ export async function uploadSingleHandler(c: Context<{ Bindings: Env }>): Promis
       sizes: imageMetadata.sizes,
       expiryTime,
       format: imageInfo.format,
+      width: imageInfo.width,
+      height: imageInfo.height,
     };
 
     // Invalidate caches (non-blocking)

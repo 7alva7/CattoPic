@@ -150,6 +150,8 @@ export interface UploadResult {
   };
   expiryTime?: string;
   format?: string;
+  width?: number;
+  height?: number;
   error?: string;
 }
 

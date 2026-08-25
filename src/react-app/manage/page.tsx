@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 import { motion } from 'motion/react';
 import ApiKeyModal from "../components/ApiKeyModal";
@@ -65,9 +65,7 @@ export default function Manage() {
     || (isUnauthorized ? { type: "error", message: "API Key无效,请重新验证" } : null)
     || (queryError ? { type: "error", message: "加载图片列表失败" } : null);
 
-  const handleDelete = async (id: string) => {
-    // 使用 mutate 而不是 mutateAsync，因为乐观更新会立即移除图片
-    // 不需要等待 API 响应，错误会通过 mutation 的 onError 处理
+  const handleDelete = useCallback(async (id: string) => {
     deleteImageMutation.mutate(id, {
       onError: () => {
         setStatus({
@@ -76,7 +74,17 @@ export default function Manage() {
         });
       },
     });
-  };
+  }, [deleteImageMutation]);
+
+  const handleImageClick = useCallback((image: ImageFile) => {
+    setSelectedImage(image);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setSelectedImage(null);
+    setIsModalOpen(false);
+  }, []);
 
   // TanStack Query automatically refetches when filters change (via queryKey)
   // No need for manual fetch effect
@@ -149,11 +157,8 @@ export default function Manage() {
                 <>
                   <VirtualImageMasonry
                     images={images}
-                    layoutKey={`${filters.format}:${filters.orientation}:${filters.tag}:${status?.type ?? ''}:${status?.message ?? ''}`}
-                    onImageClick={(image) => {
-                      setSelectedImage(image);
-                      setIsModalOpen(true);
-                    }}
+                    layoutKey={`${filters.format}:${filters.orientation}:${filters.tag}`}
+                    onImageClick={handleImageClick}
                     onDelete={handleDelete}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
@@ -186,10 +191,7 @@ export default function Manage() {
           <ImageModal
             image={selectedImage}
             isOpen={isModalOpen}
-            onClose={() => {
-              setSelectedImage(null);
-              setIsModalOpen(false);
-            }}
+            onClose={handleModalClose}
             onDelete={handleDelete}
           />
         </>

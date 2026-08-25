@@ -5,6 +5,7 @@ import { ImageData } from "../types/image";
 import { ImageInfo } from "./ImageInfo";
 import { ImageUrls } from "./ImageUrls";
 import { DeleteConfirm } from "./DeleteConfirm";
+import { ImagePreview } from "./ImagePreview";
 import { Cross1Icon, TrashIcon } from "./ui/icons";
 
 // 统一的图片类型，可以接受管理界面和上传界面的两种不同图片对象
@@ -61,7 +62,7 @@ export default function ImageModal({ image, isOpen, onClose, onDelete }: ImageMo
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative bg-white dark:bg-gray-900 rounded-2xl overflow-hidden w-full max-w-xl max-h-[85vh] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-2xl border border-gray-200/80 dark:border-gray-700/50 ring-1 ring-black/[0.05] dark:ring-white/[0.05]"
+            className="relative bg-white dark:bg-gray-900 rounded-2xl overflow-hidden w-full max-w-3xl max-h-[90vh] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-2xl border border-gray-200/80 dark:border-gray-700/50 ring-1 ring-black/[0.05] dark:ring-white/[0.05]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 头部 - 渐变背景 */}
@@ -89,8 +90,9 @@ export default function ImageModal({ image, isOpen, onClose, onDelete }: ImageMo
             </div>
 
             {/* 内容区域 */}
-            <div className="overflow-y-auto max-h-[calc(85vh-10rem)]">
-              {/* 图片元信息 - 紧凑区域 */}
+            <div className="overflow-y-auto max-h-[calc(90vh-10rem)]">
+              <ImagePreview image={image} priority />
+
               <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
                 <ImageInfo image={image} />
               </div>

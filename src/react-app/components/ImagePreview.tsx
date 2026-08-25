@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { ImageFile } from '../types';
 import { ImageData } from '../types/image';
-import { getFullUrl } from '../utils/baseUrl';
-import { useState } from 'react';
+import { previewSrc } from '../utils/cdnImage';
 import { LoadingSpinner } from './LoadingSpinner';
 import { DownloadIcon } from './ui/icons';
 
@@ -11,7 +11,6 @@ interface ImagePreviewProps {
   image: ImageType;
   priority?: boolean;
   onLoad?: () => void;
-  quality?: number;
 }
 
 export const ImagePreview = ({
@@ -22,8 +21,9 @@ export const ImagePreview = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const imageUrl = getFullUrl(image.urls?.webp || image.urls?.original || '');
   const format = (image.format || '').toLowerCase();
+  const isGif = format === 'gif';
+  const imageUrl = previewSrc(image.urls?.original || '', isGif);
 
   const handleLoadComplete = () => {
     setIsLoading(false);
@@ -39,19 +39,22 @@ export const ImagePreview = ({
   }
 
   return (
-    <div className="relative h-full w-full flex items-center justify-center">
-      <img
-        src={imageUrl}
-        alt={image.originalName || ''}
-        className={`max-h-full max-w-full object-contain transition-opacity duration-300 ${
-          isLoading ? 'opacity-0' : 'opacity-100'
-        }`}
-        loading={priority ? 'eager' : 'lazy'}
-        onLoad={handleLoadComplete}
-        onError={() => setError('Failed to load image')}
-      />
+    <div className="relative h-full w-full flex items-center justify-center bg-black/5 dark:bg-black/30 min-h-[12rem]">
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt={image.originalName || ''}
+          className={`max-h-[50vh] max-w-full object-contain ${
+            isLoading ? 'opacity-0' : 'opacity-100'
+          }`}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          onLoad={handleLoadComplete}
+          onError={() => setError('Failed to load image')}
+        />
+      )}
       {isLoading && <LoadingSpinner />}
-      {format === 'gif' && (
+      {isGif && imageUrl && (
         <a
           href={imageUrl}
           download={image.originalName}

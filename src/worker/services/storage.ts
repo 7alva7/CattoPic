@@ -4,7 +4,11 @@ import type { ImagePaths } from '../types/queue';
 export class StorageService {
   constructor(private bucket: R2Bucket) {}
 
-  async upload(key: string, data: ArrayBuffer | Uint8Array, contentType: string): Promise<void> {
+  async upload(
+    key: string,
+    data: ArrayBuffer | Uint8Array | Blob | ReadableStream,
+    contentType: string
+  ): Promise<void> {
     await this.bucket.put(key, data, {
       httpMetadata: { contentType }
     });
