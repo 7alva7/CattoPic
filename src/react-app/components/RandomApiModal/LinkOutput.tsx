@@ -40,74 +40,85 @@ export default function LinkOutput({ url }: LinkOutputProps) {
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">链接</h3>
-        <div className="segment-group">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">生成的链接</h3>
+        <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 gap-0.5">
           {formatOptions.map((option) => {
             const isSelected = outputFormat === option.value;
             return (
-              <button
-                type="button"
+              <motion.button
                 key={option.value}
                 onClick={() => setOutputFormat(option.value)}
-                className={`relative h-8 px-3 rounded-lg text-sm font-medium ${
-                  isSelected
+                className={`
+                  relative px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200
+                  ${isSelected
                     ? 'text-white'
-                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }
+                `}
+                whileTap={{ scale: 0.95 }}
               >
                 {isSelected && (
                   <motion.div
                     layoutId="output-format-bg"
-                    className="absolute inset-0 rounded-lg bg-indigo-500"
+                    className="absolute inset-0 bg-indigo-500 rounded-md"
                     transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                   />
                 )}
                 <span className="relative z-10">{option.label}</span>
-              </button>
+              </motion.button>
             );
           })}
         </div>
       </div>
 
-      <div className="relative">
-        <div className="overflow-x-auto rounded-xl bg-slate-900 p-4 pr-14 font-mono text-sm text-slate-300 dark:bg-slate-950">
+      <div className="relative group">
+        <div className="bg-slate-900 dark:bg-slate-950 rounded-xl p-4 font-mono text-sm text-slate-300 overflow-x-auto">
           <code className="break-all">{formattedOutput}</code>
         </div>
-        <button
-          type="button"
+
+        <motion.button
           onClick={handleCopy}
-          className={`absolute top-2 right-2 inline-flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
-            copied
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`
+            absolute top-3 right-3 p-2 rounded-lg transition-all duration-200
+            ${copied
               ? 'bg-emerald-500 text-white'
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
-          }`}
-          aria-label={copied ? '已复制' : '复制链接'}
+              : 'bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white'
+            }
+          `}
         >
           <AnimatePresence mode="wait">
             {copied ? (
               <motion.div
                 key="check"
-                initial={{ scale: 0.6, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.6, opacity: 0 }}
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+                transition={{ duration: 0.2 }}
               >
-                <CheckIcon className="h-4 w-4" />
+                <CheckIcon className="w-4 h-4" />
               </motion.div>
             ) : (
               <motion.div
                 key="copy"
-                initial={{ scale: 0.6, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.6, opacity: 0 }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ duration: 0.2 }}
               >
-                <ClipboardCopyIcon className="h-4 w-4" />
+                <ClipboardCopyIcon className="w-4 h-4" />
               </motion.div>
             )}
           </AnimatePresence>
-        </button>
+        </motion.button>
       </div>
+
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        点击右上角按钮复制链接到剪贴板
+      </p>
     </div>
   );
 }

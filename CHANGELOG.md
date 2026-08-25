@@ -9,10 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Gallery thumbnails transform the original object at widths 400/800/1200 and quality 75 (`srcset`); cards no longer wrap stored WebP or use Motion on the hot path.
-- Image detail dialog uses a split layout: preview on the left, metadata and copy links on the right (stacked on small screens).
-- Dialogs, primary/secondary/danger buttons, and floating action buttons share one overlay, panel, and button style.
-- Image detail fills the viewport (large preview + compact link list). API key, tag, and random-API dialogs size to their content. Action buttons share a 40px height.
-- Frontend interaction pass: dialogs hug real content or fill a work area; action buttons, fields, and segmented controls share a 40px height; nested dialogs portal to `document.body` so they are not clipped. API key is one form (no empty manage sheet). Tag rename is inline. Random-API tags are a single three-state chip set. Compression settings live inside the upload card.
+- Image detail dialog uses a split layout: preview on the left, metadata and copy links on the right (stacked on small screens). Visual language matches the rest of the app (indigo–purple header, original buttons and link cards).
 - Default upload output is WebP only; AVIF is a `/cdn-cgi/image` URL unless the compression panel requests a stored AVIF object.
 - Uploads larger than 20MB put the File to R2 without a second full `arrayBuffer()`. Large-file upload concurrency is 2.
 - `GET /api/images` reads D1 directly (no KV list get/set). Marker paths are not counted as stored WebP/AVIF in format filters.

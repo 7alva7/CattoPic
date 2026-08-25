@@ -13,38 +13,31 @@ export default function UploadModeToggle({
   onChange,
   disabled = false,
 }: UploadModeToggleProps) {
-  const itemClass = (active: boolean) =>
-    `segment-item gap-2 ${
-      active
-        ? 'text-white'
-        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
-    } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`
-
   return (
-    <div className="segment-group mb-6 w-full sm:max-w-md">
+    <div className="flex gap-2 mb-4">
       <button
-        type="button"
         onClick={() => onChange('images')}
         disabled={disabled}
-        className={itemClass(mode === 'images')}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+          mode === 'images'
+            ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
-        {mode === 'images' && (
-          <span className="absolute inset-0 rounded-lg bg-linear-to-r from-indigo-500 to-purple-600" />
-        )}
-        <ImageIcon className="relative z-10 h-4 w-4" />
-        <span className="relative z-10">图片上传</span>
+        <ImageIcon className="h-4 w-4" />
+        <span>图片上传</span>
       </button>
       <button
-        type="button"
         onClick={() => onChange('zip')}
         disabled={disabled}
-        className={itemClass(mode === 'zip')}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+          mode === 'zip'
+            ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
-        {mode === 'zip' && (
-          <span className="absolute inset-0 rounded-lg bg-linear-to-r from-indigo-500 to-purple-600" />
-        )}
-        <ArchiveIcon className="relative z-10 h-4 w-4" />
-        <span className="relative z-10">ZIP 批量</span>
+        <ArchiveIcon className="h-4 w-4" />
+        <span>ZIP批量上传</span>
       </button>
     </div>
   )

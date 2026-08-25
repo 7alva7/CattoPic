@@ -6,7 +6,6 @@ import ZipUploadProgress from './upload/ZipUploadProgress'
 import UploadModeToggle, { UploadMode } from './upload/UploadModeToggle'
 import ExpirySelector from './ExpirySelector'
 import TagSelector from './upload/TagSelector'
-import CompressionSettings from './upload/CompressionSettings'
 import { api } from '../utils/request'
 import { UploadIcon, ExclamationTriangleIcon, ImageIcon, Spinner } from '../components/ui/icons'
 import { formatFileSize } from '../utils/imageUtils'
@@ -31,10 +30,7 @@ interface UploadSectionProps {
   compressionMaxWidth: number
   preserveAnimation: boolean
   outputFormat: 'webp' | 'avif' | 'both'
-  onQualityChange: (quality: number) => void
-  onMaxWidthChange: (maxWidth: number) => void
-  onPreserveAnimationChange: (preserve: boolean) => void
-  onOutputFormatChange: (format: 'webp' | 'avif' | 'both') => void
+  // ZIP上传完成回调
   onZipUploadComplete?: (results: UploadResult[]) => void
 }
 
@@ -54,10 +50,6 @@ export default function UploadSection({
   compressionMaxWidth,
   preserveAnimation,
   outputFormat,
-  onQualityChange,
-  onMaxWidthChange,
-  onPreserveAnimationChange,
-  onOutputFormatChange,
   onZipUploadComplete
 }: UploadSectionProps) {
   const [uploadMode, setUploadMode] = useState<UploadMode>('images')
@@ -374,7 +366,7 @@ export default function UploadSection({
                   <button
                     type="button"
                     onClick={onTogglePreview}
-                    className="btn-secondary"
+                    className="px-4 py-2 text-sm bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg transition-colors duration-200 flex items-center font-medium"
                   >
                     <ImageIcon className="h-4 w-4 mr-1.5" />
                     {isPreviewOpen ? '隐藏文件列表' : '查看文件列表'}
@@ -384,21 +376,9 @@ export default function UploadSection({
             )}
           </form>
         ) : (
+          // ZIP批量上传
           renderZipUploadContent()
         )}
-
-        <div className="mt-2 border-t border-gray-100 pt-4 dark:border-gray-800">
-          <CompressionSettings
-            quality={compressionQuality}
-            maxWidth={compressionMaxWidth}
-            preserveAnimation={preserveAnimation}
-            outputFormat={outputFormat}
-            onQualityChange={onQualityChange}
-            onMaxWidthChange={onMaxWidthChange}
-            onPreserveAnimationChange={onPreserveAnimationChange}
-            onOutputFormatChange={onOutputFormatChange}
-          />
-        </div>
       </div>
     </>
   )

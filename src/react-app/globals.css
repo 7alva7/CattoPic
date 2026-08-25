@@ -62,55 +62,11 @@
 }
 
 @utility btn-primary {
-  @apply inline-flex items-center justify-center h-10 px-4 text-sm font-medium bg-linear-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-@utility btn-secondary {
-  @apply inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-@utility btn-danger {
-  @apply inline-flex items-center justify-center h-10 px-4 text-sm font-medium rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-@utility btn-ghost {
-  @apply inline-flex items-center justify-center h-10 px-3 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200;
-}
-
-@utility btn-icon {
-  @apply inline-flex items-center justify-center h-10 w-10 p-0 rounded-lg bg-light-bg-secondary text-light-text-primary hover:bg-light-hover active:bg-light-hover/80 dark:bg-dark-bg-secondary dark:text-dark-text-primary dark:hover:bg-dark-hover dark:active:bg-dark-hover/80 transition-colors duration-300;
-}
-
-@utility btn-icon-sm {
-  @apply inline-flex items-center justify-center h-8 w-8 p-0 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200;
-}
-
-@utility segment-group {
-  @apply flex rounded-xl bg-gray-100 p-1 gap-1 dark:bg-gray-800;
-}
-
-@utility segment-item {
-  @apply relative inline-flex flex-1 items-center justify-center h-10 px-3 text-sm font-medium rounded-lg transition-colors duration-200;
-}
-
-@utility chip {
-  @apply inline-flex items-center gap-1 h-7 px-3 rounded-full text-sm font-medium;
-}
-
-@utility modal-overlay {
-  @apply fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm;
-}
-
-@utility modal-panel {
-  @apply relative bg-white dark:bg-slate-800 rounded-2xl overflow-hidden w-full shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-2xl border border-gray-200/80 dark:border-gray-700/50 ring-1 ring-black/[0.03] dark:ring-white/[0.05];
-}
-
-@utility fab {
-  @apply rounded-full p-3.5 shadow-lg shadow-indigo-500/30 bg-indigo-500 hover:bg-indigo-600 text-white transition-all duration-300 hover:scale-110;
+  @apply bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 transition-colors duration-300;
 }
 
 @utility input-primary {
-  @apply h-10 w-full px-3 text-sm bg-light-bg-secondary border border-light-border text-light-text-primary rounded-lg shadow-xs dark:bg-dark-bg-secondary dark:border-dark-border dark:text-dark-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply bg-light-bg-secondary border border-light-border text-light-text-primary rounded-lg dark:bg-dark-bg-secondary dark:border-dark-border dark:text-dark-text-primary focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-all duration-300;
 }
 
 @utility drop-zone {
@@ -125,6 +81,10 @@
   &.drop-zone {
     @apply border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20;
   }
+}
+
+@utility btn-icon {
+  @apply p-2 rounded-lg bg-light-bg-secondary text-light-text-primary hover:bg-light-hover active:bg-light-hover/80 dark:bg-dark-bg-secondary dark:text-dark-text-primary dark:hover:bg-dark-hover dark:active:bg-dark-hover/80 transition-colors duration-300;
 }
 
 /* 动画效果 */

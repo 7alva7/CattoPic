@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import ImageModal from "../components/ImageModal";
 import { thumbnailSrc } from "../utils/cdnImage";
-import { ImageIcon, ExclamationTriangleIcon } from "./ui/icons";
-import { ModalCloseButton } from "./ui/Modal";
+import { ImageIcon, Cross1Icon, ExclamationTriangleIcon } from "./ui/icons";
 import { ImageData } from "../types/image";
 
 interface ImageSidebarProps {
@@ -212,15 +211,19 @@ const ImageSidebar = React.memo(function ImageSidebar({
                 <ImageIcon className="h-5 w-5 mr-2 text-white opacity-90" />
                 上传结果 ({results.length})
               </h2>
-              <ModalCloseButton onClick={onClose} light />
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <Cross1Icon className="h-5 w-5" />
+              </button>
             </div>
 
             {/* 标签切换 */}
             <div className="flex border-b border-slate-200 dark:border-slate-700">
               <button
-                type="button"
                 onClick={handleTabAll}
-                className={`relative flex h-10 flex-1 items-center justify-center px-4 text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative ${
                   tab === "all"
                     ? "text-indigo-600 dark:text-indigo-400"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
@@ -235,9 +238,8 @@ const ImageSidebar = React.memo(function ImageSidebar({
                 )}
               </button>
               <button
-                type="button"
                 onClick={handleTabSuccess}
-                className={`relative flex h-10 flex-1 items-center justify-center px-4 text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative ${
                   tab === "success"
                     ? "text-green-600 dark:text-green-400"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
@@ -252,9 +254,8 @@ const ImageSidebar = React.memo(function ImageSidebar({
                 )}
               </button>
               <button
-                type="button"
                 onClick={handleTabError}
-                className={`relative flex h-10 flex-1 items-center justify-center px-4 text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative ${
                   tab === "error"
                     ? "text-red-600 dark:text-red-400"
                     : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"

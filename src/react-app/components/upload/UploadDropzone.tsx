@@ -100,7 +100,7 @@ export default function UploadDropzone({ onFilesSelected, maxUploadCount }: Uplo
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="btn-primary"
+        className="btn-primary px-4 py-2"
       >
         选择图片
       </button>

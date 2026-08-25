@@ -1,12 +1,12 @@
 import { motion, AnimatePresence } from 'motion/react'
 import {
   ImageIcon,
+  Cross1Icon,
   TrashIcon,
   UploadIcon,
   Spinner,
   Cross2Icon,
 } from '../ui/icons'
-import { ModalCloseButton } from '../ui/Modal'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCallback, useEffect, useRef } from 'react'
 import { UploadPhase, UploadFileItem, FileUploadStatus } from '../../types/upload'
@@ -129,9 +129,13 @@ export default function PreviewSidebar({
               )}
               {getHeaderTitle(phase, totalFiles, completedCount, errorCount)}
             </h2>
-            <div className={uploading ? 'pointer-events-none opacity-50' : ''}>
-              <ModalCloseButton onClick={onClose} light />
-            </div>
+            <button
+              onClick={onClose}
+              disabled={uploading}
+              className="p-2 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Cross1Icon className="h-5 w-5" />
+            </button>
           </div>
 
           {/* 侧边栏内容 */}
@@ -209,12 +213,10 @@ export default function PreviewSidebar({
                         {/* 操作按钮 */}
                         {canRemoveFile(item.status) && (
                           <button
-                            type="button"
                             onClick={() => removeFile(item.id)}
-                            className="btn-icon-sm shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:text-slate-500 dark:hover:text-red-400 dark:hover:bg-red-900/20"
-                            aria-label="移除文件"
+                            className="shrink-0 p-2 rounded-full text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           >
-                            <TrashIcon className="h-4 w-4" />
+                            <TrashIcon className="h-5 w-5" />
                           </button>
                         )}
                       </div>
@@ -231,20 +233,20 @@ export default function PreviewSidebar({
             <div className="p-4 border-t border-slate-200/50 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-800/50">
               <div className="flex space-x-2">
                 {uploading ? (
+                  // 上传中显示取消按钮
                   <button
-                    type="button"
                     onClick={onCancelUpload}
-                    className="btn-danger"
+                    className="px-4 py-2 flex items-center justify-center bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors duration-200 font-medium border border-red-200 dark:border-red-800/50"
                   >
                     <Cross2Icon className="h-4 w-4 mr-2" />
                     取消上传
                   </button>
                 ) : (
+                  // 空闲或完成时显示清除按钮
                   <button
-                    type="button"
                     onClick={onRemoveAll}
                     disabled={phase === 'completed' && errorCount === 0}
-                    className="btn-secondary"
+                    className="px-4 py-2 flex items-center justify-center bg-white hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors duration-200 font-medium border border-slate-200 dark:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <TrashIcon className="h-4 w-4 mr-2" />
                     清除全部
@@ -252,10 +254,9 @@ export default function PreviewSidebar({
                 )}
 
                 <button
-                  type="button"
                   onClick={onUpload}
                   disabled={uploading || (phase === 'completed' && errorCount === 0)}
-                  className="btn-primary flex-1"
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200 font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {phase === 'uploading' ? (
                     <>
