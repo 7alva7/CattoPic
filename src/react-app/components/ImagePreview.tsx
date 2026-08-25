@@ -41,14 +41,15 @@ export const ImagePreview = ({
   }
 
   return (
-    <div className={`relative h-full w-full flex items-center justify-center bg-black/5 dark:bg-black/30 ${fill ? '' : 'min-h-[12rem]'}`}>
+    <div className={`relative h-full w-full ${fill ? 'bg-slate-950' : 'flex items-center justify-center bg-black/5 dark:bg-black/30 min-h-[12rem]'}`}>
       {imageUrl && (
         <img
           src={imageUrl}
           alt={image.originalName || ''}
-          className={`${fill ? 'h-full w-full max-h-full p-4' : 'max-h-[50vh]'} max-w-full object-contain ${
-            isLoading ? 'opacity-0' : 'opacity-100'
-          }`}
+          className={fill
+            ? `absolute inset-0 h-full w-full object-cover ${isLoading ? 'opacity-0' : 'opacity-100'}`
+            : `max-h-[50vh] max-w-full object-contain ${isLoading ? 'opacity-0' : 'opacity-100'}`
+          }
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           onLoad={handleLoadComplete}

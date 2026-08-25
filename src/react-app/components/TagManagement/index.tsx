@@ -132,14 +132,16 @@ export default function TagManagement() {
             </span>
             <div className="flex space-x-2">
               <button
+                type="button"
                 onClick={clearSelection}
-                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="btn-secondary"
               >
                 取消选择
               </button>
               <button
+                type="button"
                 onClick={() => setShowBatchDeleteConfirm(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                className="btn-danger gap-1.5"
               >
                 <TrashIcon className="h-4 w-4" />
                 <span>批量删除</span>

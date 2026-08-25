@@ -80,7 +80,7 @@ export default function ZipUploadDropzone({
           e.stopPropagation()
           fileInputRef.current?.click()
         }}
-        className="btn-primary px-4 py-2"
+        className="btn-primary"
         disabled={disabled}
       >
         选择ZIP文件

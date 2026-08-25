@@ -9,7 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Gallery thumbnails transform the original object at widths 400/800/1200 and quality 75 (`srcset`); cards no longer wrap stored WebP or use Motion on the hot path.
-- Image detail dialog uses a split layout: preview on the left, metadata and copy links on the right (stacked on small screens). Visual language matches the rest of the app (indigo–purple header, original buttons and link cards).
+- Image detail is a fixed-size split dialog: the preview covers the left pane (`object-cover`), metadata and copy links stay on the right. Action buttons match the solid indigo / bordered secondary language of the API key dialog. Body type is Inter + Noto Sans SC at 500, with darker slate text.
+- Dialogs share the card language: `rounded-2xl` panel, circular icon badge, and the same header as the API key sheet. Tag delete uses that header instead of a centered warning poster. Nested tag edit/delete portal above the parent dialog.
 - Default upload output is WebP only; AVIF is a `/cdn-cgi/image` URL unless the compression panel requests a stored AVIF object.
 - Uploads larger than 20MB put the File to R2 without a second full `arrayBuffer()`. Large-file upload concurrency is 2.
 - `GET /api/images` reads D1 directly (no KV list get/set). Marker paths are not counted as stored WebP/AVIF in format filters.

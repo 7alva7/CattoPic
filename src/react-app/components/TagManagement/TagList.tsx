@@ -24,7 +24,7 @@ export default function TagList({
 
   if (tags.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 bg-white dark:bg-slate-800 rounded-xl shadow-md p-8 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-700">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 px-6 py-12 text-gray-500 dark:border-gray-700 dark:text-gray-400">
         <TagIcon className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" />
         <p className="text-lg font-medium">暂无标签</p>
         <p className="mt-2 text-sm">请创建您的第一个标签</p>
@@ -33,7 +33,7 @@ export default function TagList({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700">
       {/* 表头 */}
       <div className="flex items-center px-4 py-3 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-gray-700">
         <button

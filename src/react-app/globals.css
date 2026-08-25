@@ -6,8 +6,8 @@
   --color-light-bg-primary: #f8fafc;
   --color-light-bg-secondary: #ffffff;
 
-  --color-light-text-primary: #1e293b;
-  --color-light-text-secondary: #64748b;
+  --color-light-text-primary: #0f172a;
+  --color-light-text-secondary: #334155;
 
   --color-light-border: #e2e8f0;
   --color-light-hover: #f1f5f9;
@@ -62,7 +62,15 @@
 }
 
 @utility btn-primary {
-  @apply bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 transition-colors duration-300;
+  @apply inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+@utility btn-secondary {
+  @apply inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+@utility btn-danger {
+  @apply inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 @utility input-primary {
@@ -87,6 +95,14 @@
   @apply p-2 rounded-lg bg-light-bg-secondary text-light-text-primary hover:bg-light-hover active:bg-light-hover/80 dark:bg-dark-bg-secondary dark:text-dark-text-primary dark:hover:bg-dark-hover dark:active:bg-dark-hover/80 transition-colors duration-300;
 }
 
+@utility dialog-overlay {
+  @apply fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm;
+}
+
+@utility dialog-panel {
+  @apply relative w-full bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-2xl border border-gray-200/80 dark:border-gray-700/50 ring-1 ring-black/[0.03] dark:ring-white/[0.05];
+}
+
 /* 动画效果 */
 @utility fade-in {
   @apply animate-[fadeIn_0.3s_ease-in-out];
@@ -103,7 +119,8 @@
       system-ui,
       -apple-system,
       sans-serif;
-    font-weight: 700;
+    font-weight: 500;
+    color: #0f172a;
   }
   /* 亮色主题变量 */
   :root {
@@ -164,7 +181,7 @@
 @layer base {
     body {
         font-family: Inter, "Noto Sans SC", system-ui, -apple-system, sans-serif;
-        font-weight: 700;
+        font-weight: 500;
         @apply bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 text-light-text-primary transition-colors duration-300;
         min-height: 100vh;
     }

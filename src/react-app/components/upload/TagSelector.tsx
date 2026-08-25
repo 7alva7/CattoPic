@@ -85,7 +85,7 @@ export default function TagSelector({ selectedTags, availableTags, onTagsChange,
             <button
               type="button"
               onClick={handleAddTag}
-              className="px-3 py-2 rounded-r-lg bg-linear-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-medium transition-colors duration-200 text-sm flex items-center"
+              className="inline-flex items-center justify-center rounded-r-lg bg-indigo-500 px-3 py-2 text-white hover:bg-indigo-600"
             >
               <PlusIcon className="h-4 w-4" />
             </button>

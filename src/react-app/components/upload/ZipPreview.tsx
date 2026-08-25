@@ -77,14 +77,14 @@ export default function ZipPreview({
         <button
           onClick={onConfirm}
           disabled={isProcessing || analysis.totalImages === 0}
-          className="btn-primary flex-1 py-2"
+          className="btn-primary flex-1"
         >
           {isProcessing ? '处理中...' : `开始上传 ${analysis.totalImages} 张图片`}
         </button>
         <button
           onClick={onCancel}
           disabled={isProcessing}
-          className="btn-secondary px-4 py-2"
+          className="btn-secondary"
         >
           取消
         </button>

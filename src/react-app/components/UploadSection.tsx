@@ -366,7 +366,7 @@ export default function UploadSection({
                   <button
                     type="button"
                     onClick={onTogglePreview}
-                    className="px-4 py-2 text-sm bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg transition-colors duration-200 flex items-center font-medium"
+                    className="btn-secondary"
                   >
                     <ImageIcon className="h-4 w-4 mr-1.5" />
                     {isPreviewOpen ? '隐藏文件列表' : '查看文件列表'}

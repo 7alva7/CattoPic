@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { PlusIcon, MinusIcon } from '../ui/icons';
 
 interface TagSelectorProps {
@@ -22,97 +21,81 @@ export default function TagSelector({
     return 'none';
   };
 
+  const chip = (active: boolean, activeClass: string) =>
+    `rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+      active ? activeClass : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+    }`;
+
   return (
-    <div className="space-y-4">
-      {/* 包含标签 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <PlusIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 dark:border-gray-700 dark:bg-slate-700/30">
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/30">
+            <PlusIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            包含标签
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            包含
             {includeTags.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-emerald-600 dark:text-emerald-400">
-                已选 {includeTags.length} 个
+              <span className="ml-2 text-xs font-normal text-indigo-600 dark:text-indigo-400">
+                {includeTags.length}
               </span>
             )}
           </h3>
         </div>
         <div className="flex flex-wrap gap-2">
           {availableTags.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500 italic">暂无可用标签</p>
+            <p className="text-sm text-gray-400">暂无可用标签</p>
           ) : (
             availableTags.map((tag) => {
               const state = getTagState(tag);
-              const isIncluded = state === 'include';
-
               return (
-                <motion.button
+                <button
+                  type="button"
                   key={`include-${tag}`}
                   onClick={() => onToggleInclude(tag)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`
-                    px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-                    ${isIncluded
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }
-                    ${state === 'exclude' ? 'opacity-40' : ''}
-                  `}
+                  className={`${chip(state === 'include', 'bg-linear-to-r from-indigo-500 to-purple-500 text-white')} ${
+                    state === 'exclude' ? 'opacity-40' : ''
+                  }`}
                 >
                   {tag}
-                </motion.button>
+                </button>
               );
             })
           )}
         </div>
       </div>
 
-      {/* 分割线 */}
-      <div className="border-t border-gray-200 dark:border-gray-700" />
-
-      {/* 排除标签 */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-            <MinusIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
+      <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 dark:border-gray-700 dark:bg-slate-700/30">
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+            <MinusIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            排除标签
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            排除
             {excludeTags.length > 0 && (
               <span className="ml-2 text-xs font-normal text-red-600 dark:text-red-400">
-                已排除 {excludeTags.length} 个
+                {excludeTags.length}
               </span>
             )}
           </h3>
         </div>
         <div className="flex flex-wrap gap-2">
           {availableTags.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500 italic">暂无可用标签</p>
+            <p className="text-sm text-gray-400">暂无可用标签</p>
           ) : (
             availableTags.map((tag) => {
               const state = getTagState(tag);
-              const isExcluded = state === 'exclude';
-
               return (
-                <motion.button
+                <button
+                  type="button"
                   key={`exclude-${tag}`}
                   onClick={() => onToggleExclude(tag)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`
-                    px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-                    ${isExcluded
-                      ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }
-                    ${state === 'include' ? 'opacity-40' : ''}
-                  `}
+                  className={`${chip(state === 'exclude', 'bg-red-500 text-white')} ${
+                    state === 'include' ? 'opacity-40' : ''
+                  }`}
                 >
                   {tag}
-                </motion.button>
+                </button>
               );
             })
           )}
